@@ -1,0 +1,10 @@
+[package]
+name = "jazz-jit"
+version = "0.1.0"
+authors = ["playXE <adel.prokurov@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+libc = "0.2"
+byteorder = "1.2.7"
+capstone = "0.5.0"
