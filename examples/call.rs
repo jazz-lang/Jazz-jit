@@ -8,11 +8,6 @@ use jazz_jit::assembler_x64::*;
 use jazz_jit::constants_x64::*;
 use jazz_jit::{get_executable_memory,Memory};
 
-extern "C" fn function() -> i32 {
-    println!("Function called!");
-    return 0;
-}
-
 fn main() {
     let mut asm = Assembler::new();
     emit_movl_imm_reg(&mut asm, 2, RAX);
