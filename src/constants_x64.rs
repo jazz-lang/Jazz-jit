@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
 #[repr(i32)]
 pub enum Register {
     RAX = 0,
@@ -43,7 +43,7 @@ impl Register {
 
 pub use self::Register::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
 #[repr(i32)]
 pub enum ByteRegister {
     AL = 0,
@@ -81,7 +81,7 @@ pub fn byte_register_of(reg: Register) -> ByteRegister {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
 #[repr(i32)]
 pub enum XMMRegister {
     XMM0 = 0,
@@ -150,7 +150,7 @@ pub const kStackTraceObjectReg: Register = RDX;
 
 
 
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
 pub enum Reg {
     Gpr(Register),
     Byte(ByteRegister),
