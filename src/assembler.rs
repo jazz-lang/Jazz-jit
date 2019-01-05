@@ -6,8 +6,6 @@ pub struct ForwardJump {
 use crate::constants_x64::Register;
 use byteorder::{WriteBytesExt,LittleEndian,ByteOrder};
 use crate::dseg::DSeg;
-use alloc::vec::Vec;
-
 pub type Label = usize;
 
 trait Idx {

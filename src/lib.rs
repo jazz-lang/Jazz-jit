@@ -1,10 +1,5 @@
-#![feature(ptr_internals)]
-#![feature(alloc)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-#![no_std]
-
-extern crate alloc;
 
 
 

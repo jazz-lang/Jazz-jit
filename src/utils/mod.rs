@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 pub fn copy_vec<T: Copy>(v: &Vec<T>) -> Vec<T> {
     let mut new = Vec::new();
 

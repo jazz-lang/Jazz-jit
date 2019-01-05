@@ -1,7 +1,6 @@
 ///! TODO: Don't use Data segment at all
 use crate::align;
 use core::mem::size_of;
-use alloc::vec::Vec;
 
 #[derive(Debug, Clone)]
 pub struct DSeg {
