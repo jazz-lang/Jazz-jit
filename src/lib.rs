@@ -77,9 +77,9 @@ fn setup(size: usize) -> *mut u8 {
     unsafe {
         let _size = size * PAGE_SIZE;
 
-        let mem: *mut u8 = mem::transmute(kernel32::VirtualAlloc(
+        let mem: *mut u8 = mem::transmute(winapi::um::memoryapi::VirtualAlloc(
             ::std::ptr::null_mut(),
-            _size as u64,
+            _size,
             winapi::um::winnt::MEM_COMMIT,
             winapi::um::winnt::PAGE_EXECUTE_READWRITE,
         ));

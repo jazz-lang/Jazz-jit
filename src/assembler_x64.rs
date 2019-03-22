@@ -1,9 +1,9 @@
-use crate::CondCode;
-use crate::assembler::{Label, Assembler};
-use crate::constants_x64::*;
-use crate::MachineMode;
 use crate::assembler::Mem;
+use crate::assembler::{Assembler, Label};
 use crate::assembler_x64 as asm;
+use crate::constants_x64::*;
+use crate::CondCode;
+use crate::MachineMode;
 
 pub fn fits_i32(n: i64) -> bool {
     n == (n as i32) as i64
@@ -11,7 +11,6 @@ pub fn fits_i32(n: i64) -> bool {
 
 impl Assembler {
     pub fn load_int_const(&mut self, mode: MachineMode, dest: Register, imm: i64) {
-        
         match mode {
             MachineMode::Int8 | MachineMode::Int32 => {
                 asm::emit_movl_imm_reg(self, imm as i32, dest)
@@ -98,7 +97,13 @@ impl Assembler {
         }
     }
 
-    pub fn float_add(&mut self, mode: MachineMode, dest: XMMRegister, lhs: XMMRegister, rhs: XMMRegister) {
+    pub fn float_add(
+        &mut self,
+        mode: MachineMode,
+        dest: XMMRegister,
+        lhs: XMMRegister,
+        rhs: XMMRegister,
+    ) {
         match mode {
             MachineMode::Float32 => asm::addss(self, lhs, rhs),
             MachineMode::Float64 => asm::addsd(self, lhs, rhs),
@@ -110,7 +115,13 @@ impl Assembler {
         }
     }
 
-    pub fn float_sub(&mut self, mode: MachineMode, dest: XMMRegister, lhs: XMMRegister, rhs: XMMRegister) {
+    pub fn float_sub(
+        &mut self,
+        mode: MachineMode,
+        dest: XMMRegister,
+        lhs: XMMRegister,
+        rhs: XMMRegister,
+    ) {
         match mode {
             MachineMode::Float32 => asm::subss(self, lhs, rhs),
             MachineMode::Float64 => asm::subsd(self, lhs, rhs),
@@ -122,7 +133,13 @@ impl Assembler {
         }
     }
 
-    pub fn float_mul(&mut self, mode: MachineMode, dest: XMMRegister, lhs: XMMRegister, rhs: XMMRegister) {
+    pub fn float_mul(
+        &mut self,
+        mode: MachineMode,
+        dest: XMMRegister,
+        lhs: XMMRegister,
+        rhs: XMMRegister,
+    ) {
         match mode {
             MachineMode::Float32 => asm::mulss(self, lhs, rhs),
             MachineMode::Float64 => asm::mulsd(self, lhs, rhs),
@@ -134,7 +151,13 @@ impl Assembler {
         }
     }
 
-    pub fn float_div(&mut self, mode: MachineMode, dest: XMMRegister, lhs: XMMRegister, rhs: XMMRegister) {
+    pub fn float_div(
+        &mut self,
+        mode: MachineMode,
+        dest: XMMRegister,
+        lhs: XMMRegister,
+        rhs: XMMRegister,
+    ) {
         match mode {
             MachineMode::Float32 => asm::divss(self, lhs, rhs),
             MachineMode::Float64 => asm::divsd(self, lhs, rhs),
@@ -476,7 +499,14 @@ impl Assembler {
         self.div_common(mode, dest, lhs, rhs, RDX);
     }
 
-    fn div_common(&mut self, mode: MachineMode, dest: Register, lhs: Register, rhs: Register, result: Register) {
+    fn div_common(
+        &mut self,
+        mode: MachineMode,
+        dest: Register,
+        lhs: Register,
+        rhs: Register,
+        result: Register,
+    ) {
         let x64 = match mode {
             MachineMode::Int32 => 0,
             MachineMode::Int64 => 1,
@@ -712,8 +742,6 @@ impl Assembler {
     pub fn double_to_float(&mut self, dest: XMMRegister, src: XMMRegister) {
         asm::cvtsd2ss(self, dest, src);
     }
-
-
 }
 
 pub fn emit_or_reg_reg(buf: &mut Assembler, x64: u8, src: Register, dest: Register) {
@@ -857,19 +885,43 @@ pub fn emit_movb_imm_memscaleq(
     emit(buf, imm);
 }
 
-pub fn emit_movq_ar(buf: &mut Assembler, base: Register, index: Register, scale: u8, dest: Register) {
+pub fn emit_movq_ar(
+    buf: &mut Assembler,
+    base: Register,
+    index: Register,
+    scale: u8,
+    dest: Register,
+) {
     emit_mov_ar(buf, 1, 0x8b, base, index, scale, dest);
 }
 
-pub fn emit_movl_ar(buf: &mut Assembler, base: Register, index: Register, scale: u8, dest: Register) {
+pub fn emit_movl_ar(
+    buf: &mut Assembler,
+    base: Register,
+    index: Register,
+    scale: u8,
+    dest: Register,
+) {
     emit_mov_ar(buf, 0, 0x8b, base, index, scale, dest);
 }
 
-pub fn emit_movq_ra(buf: &mut Assembler, src: Register, base: Register, index: Register, scale: u8) {
+pub fn emit_movq_ra(
+    buf: &mut Assembler,
+    src: Register,
+    base: Register,
+    index: Register,
+    scale: u8,
+) {
     emit_mov_ar(buf, 1, 0x89, base, index, scale, src);
 }
 
-pub fn emit_movl_ra(buf: &mut Assembler, src: Register, base: Register, index: Register, scale: u8) {
+pub fn emit_movl_ra(
+    buf: &mut Assembler,
+    src: Register,
+    base: Register,
+    index: Register,
+    scale: u8,
+) {
     emit_mov_ar(buf, 0, 0x89, base, index, scale, src);
 }
 
@@ -1766,6 +1818,44 @@ pub fn cvttss2si(buf: &mut Assembler, x64: u8, dest: Register, src: XMMRegister)
     sse_float_reg_freg(buf, false, 0x2c, x64, dest, src);
 }
 
+pub fn movd_reg_freg(buf: &mut Assembler, dest: Register, src: XMMRegister) {
+    sse_reg_freg(buf, 0x66, 0, dest, src);
+}
+
+pub fn movq_reg_freg(buf: &mut Assembler, dest: Register, src: XMMRegister) {
+    sse_reg_freg(buf, 0x66, 1, dest, src);
+}
+
+pub fn movd_freg_reg(buf: &mut Assembler, dest: XMMRegister, src: Register) {
+    sse_freg_reg(buf, 0x66, 0, dest, src);
+}
+
+pub fn movq_freg_reg(buf: &mut Assembler, dest: XMMRegister, src: Register) {
+    sse_freg_reg(buf, 0x66, 1, dest, src);
+}
+
+fn sse_reg_freg(buf: &mut Assembler, op: u8, x64: u8, dest: Register, src: XMMRegister) {
+    emit_op(buf, op);
+    if x64 != 0 || dest.msb() != 0 || src.msb() != 0 {
+        emit_rex(buf, x64, dest.msb(), 0, src.msb());
+    }
+
+    emit_op(buf, 0x0f);
+    emit_op(buf, 0x7e);
+    emit_modrm(buf, 0b11, dest.and7(), src.and7());
+}
+
+fn sse_freg_reg(buf: &mut Assembler, op: u8, x64: u8, dest: XMMRegister, src: Register) {
+    emit_op(buf, op);
+    if x64 != 0 || dest.msb() != 0 || src.msb() != 0 {
+        emit_rex(buf, x64, dest.msb(), 0, src.msb());
+    }
+
+    emit_op(buf, 0x0f);
+    emit_op(buf, 0x6e);
+    emit_modrm(buf, 0b11, dest.and7(), src.and7());
+}
+
 pub fn cvttsd2si(buf: &mut Assembler, x64: u8, dest: Register, src: XMMRegister) {
     sse_float_reg_freg(buf, true, 0x2c, x64, dest, src);
 }
@@ -1778,7 +1868,13 @@ pub fn xorpd(buf: &mut Assembler, dest: XMMRegister, src: Mem) {
     sse_float_freg_mem_66(buf, true, 0x57, dest, src);
 }
 
-fn sse_float_freg_freg(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: XMMRegister) {
+fn sse_float_freg_freg(
+    buf: &mut Assembler,
+    dbl: bool,
+    op: u8,
+    dest: XMMRegister,
+    src: XMMRegister,
+) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -1796,10 +1892,10 @@ fn sse_float_freg_mem(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister,
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
-    emit_rex_mem(buf, 0, unsafe {::core::mem::transmute(dest)}, &src);
+    emit_rex_mem(buf, 0, unsafe { ::core::mem::transmute(dest) }, &src);
     emit_op(buf, 0x0f);
     emit_op(buf, op);
-    emit_mem(buf, unsafe {::core::mem::transmute(dest)}, &src);
+    emit_mem(buf, unsafe { ::core::mem::transmute(dest) }, &src);
 }
 
 fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: Mem) {
@@ -1807,13 +1903,24 @@ fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegist
         emit_op(buf, 0x66);
     }
 
-    emit_rex_mem(buf, 0, unsafe {::core::mem::transmute(dest)}, &src);
+    emit_rex_mem(buf, 0, unsafe { ::core::mem::transmute(dest) }, &src);
     emit_op(buf, 0x0f);
     emit_op(buf, op);
-    emit_mem(buf, /*Register(dest.0)*/ unsafe {::core::mem::transmute(dest)}, &src);
+    emit_mem(
+        buf,
+        /*Register(dest.0)*/ unsafe { ::core::mem::transmute(dest) },
+        &src,
+    );
 }
 
-fn sse_float_freg_reg(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, x64: u8, src: Register) {
+fn sse_float_freg_reg(
+    buf: &mut Assembler,
+    dbl: bool,
+    op: u8,
+    dest: XMMRegister,
+    x64: u8,
+    src: Register,
+) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -1827,7 +1934,14 @@ fn sse_float_freg_reg(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister,
     emit_modrm(buf, 0b11, dest.and7(), src.and7());
 }
 
-fn sse_float_reg_freg(buf: &mut Assembler, dbl: bool, op: u8, x64: u8, dest: Register, src: XMMRegister) {
+fn sse_float_reg_freg(
+    buf: &mut Assembler,
+    dbl: bool,
+    op: u8,
+    x64: u8,
+    dest: Register,
+    src: XMMRegister,
+) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -1874,4 +1988,3 @@ fn sse_cmp(buf: &mut Assembler, dbl: bool, dest: XMMRegister, src: XMMRegister) 
     emit_op(buf, 0x2e);
     emit_modrm(buf, 0b11, dest.and7(), src.and7());
 }
-
