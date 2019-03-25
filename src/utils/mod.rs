@@ -15,12 +15,11 @@ pub fn align(value: i32, align: i32) -> i32 {
     ((value + align - 1) / align) * align
 }
 
-
 #[macro_export]
 macro_rules!  fast_const {
     ($base:ident: $($v: vis $name:ident = $e:expr),+) => {
         $(
-            $v const $name: $base = $e; 
+            $v const $name: $base = $e;
         )*
     };
 }

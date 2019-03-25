@@ -4,16 +4,20 @@ use jazz_jit::assembler::Assembler;
 use jazz_jit::assembler_x64::*;
 use jazz_jit::avx::*;
 use jazz_jit::constants_x64::*;
+use jazz_jit::get_executable_memory;
 extern crate capstone;
 
 use capstone::prelude::*;
 
 fn main() {
     let mut asm = Assembler::new();
-    vmovd_freg_reg(&mut asm, XMM1, RAX);
-
+    vaddpd(&mut asm, XMM0, XMM1, XMM2);
+    emit_retq(&mut asm);
     let data = asm.data();
-
+    for byte in data.iter() {
+        print!("0x{:x} ", byte);
+    }
+    println!("");
     let mut cs = Capstone::new()
         .x86()
         .mode(arch::x86::ArchMode::Mode64)

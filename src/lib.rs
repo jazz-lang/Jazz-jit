@@ -6,8 +6,8 @@ pub mod assembler_x64;
 pub mod avx;
 pub mod constants_x64;
 pub mod dseg;
-pub mod utils;
 
+pub mod utils;
 pub use self::utils::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

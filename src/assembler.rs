@@ -36,7 +36,7 @@ pub enum Mem {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct Assembler {
-    data: Vec<u8>,
+    pub(crate) data: Vec<u8>,
     pub dseg: DSeg,
     pub jumps: Vec<ForwardJump>,
     pub labels: Vec<Option<usize>>,

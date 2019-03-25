@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord, Hash)]
 #[repr(i32)]
 pub enum Register {
     RAX = 0,
@@ -52,15 +52,9 @@ impl Register {
     }
 }
 
-
-
 pub use self::Register::*;
 
-
-
-
-
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord, Hash)]
 #[repr(i32)]
 pub enum XMMRegister {
     XMM0 = 0,
@@ -108,7 +102,7 @@ impl XMMRegister {
     }
     #[inline]
     pub fn from_gp(reg: Register) -> XMMRegister {
-        unsafe {std::mem::transmute(reg)}
+        unsafe { std::mem::transmute(reg) }
     }
 }
 
@@ -138,10 +132,7 @@ pub const SPREG: Register = RSP;
 /// Frame pointer register
 pub const FPREG: Register = RBP;
 
-
-
-
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord, Hash)]
 pub enum Reg {
     Gpr(Register),
     Float(XMMRegister),
@@ -151,15 +142,14 @@ impl Reg {
     pub fn reg(&self) -> Register {
         match self {
             Reg::Gpr(reg) => *reg,
-            _ => panic!("")
+            _ => panic!(""),
         }
     }
-
 
     pub fn freg(&self) -> XMMRegister {
         match self {
             Reg::Float(float) => *float,
-            _ => panic!("")
+            _ => panic!(""),
         }
     }
 }
