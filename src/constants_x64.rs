@@ -23,19 +23,32 @@ pub enum Register {
 }
 
 impl Register {
+    #[inline]
     pub fn is_basic_reg(self) -> bool {
         self == RAX || self == RBX || self == RCX || self == RDX
     }
+    #[inline]
     pub fn msb(self) -> u8 {
         assert!(self != RIP);
 
         (self as u8 >> 3) & 0x01
     }
 
+    #[inline]
     pub fn and7(self) -> u8 {
         assert!(self != RIP);
 
         self as u8 & 0x07
+    }
+
+    #[inline]
+    pub fn high_bit(&self) -> u8 {
+        self.msb()
+    }
+
+    #[inline]
+    pub fn low_bit(&self) -> u8 {
+        self.and7()
     }
 }
 
@@ -43,43 +56,9 @@ impl Register {
 
 pub use self::Register::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
-#[repr(i32)]
-pub enum ByteRegister {
-    AL = 0,
-    CL = 1,
-    DL = 2,
-    BL = 3,
-    AH = 4,
-    CH = 5,
-    DH = 6,
-    BH = 7,
-    SPL = 4 | 0x10,
-    BPL = 5 | 0x10,
-    SIL = 6 | 0x10,
-    DIL = 7 | 0x10,
-    R8B = 8,
-    R9B = 9,
-    R10B = 10,
-    R11B = 11,
-    R12B = 12,
-    R13B = 13,
-    R14B = 14,
-    R15B = 15,
-    /// Signals an illegal register.
-    kNoByteRegister = -1,
-}
 
-pub use self::ByteRegister::*;
 
-#[inline]
-pub fn byte_register_of(reg: Register) -> ByteRegister {
-    if RSP <= reg && reg <= RDI {
-        return unsafe { ::core::mem::transmute(reg as i32 | 0x10) };
-    } else {
-        return unsafe { ::core::mem::transmute(reg) };
-    }
-}
+
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
 #[repr(i32)]
@@ -105,16 +84,31 @@ pub enum XMMRegister {
 }
 
 impl XMMRegister {
+    #[inline]
     pub fn msb(self) -> u8 {
         //assert!(self != RIP);
 
         (self as u8 >> 3) & 0x01
     }
-
+    #[inline]
     pub fn and7(self) -> u8 {
         //assert!(self != RIP);
 
         self as u8 & 0x07
+    }
+
+    #[inline]
+    pub fn high_bit(&self) -> u8 {
+        self.msb()
+    }
+
+    #[inline]
+    pub fn low_bit(&self) -> u8 {
+        self.and7()
+    }
+    #[inline]
+    pub fn from_gp(reg: Register) -> XMMRegister {
+        unsafe {std::mem::transmute(reg)}
     }
 }
 
@@ -145,15 +139,11 @@ pub const SPREG: Register = RSP;
 pub const FPREG: Register = RBP;
 
 
-pub const kExceptionObjectReg: Register = RAX;
-pub const kStackTraceObjectReg: Register = RDX;
-
 
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord,Hash)]
 pub enum Reg {
     Gpr(Register),
-    Byte(ByteRegister),
     Float(XMMRegister),
 }
 
@@ -165,12 +155,6 @@ impl Reg {
         }
     }
 
-    pub fn breg(&self) -> ByteRegister {
-        match self{
-            Reg::Byte(breg) => *breg,
-            _ => panic!("")
-        }
-    }
 
     pub fn freg(&self) -> XMMRegister {
         match self {

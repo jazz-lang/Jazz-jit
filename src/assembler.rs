@@ -4,8 +4,8 @@ pub struct ForwardJump {
     pub to: usize,
 }
 use crate::constants_x64::Register;
-use byteorder::{WriteBytesExt,LittleEndian,ByteOrder};
 use crate::dseg::DSeg;
+use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 pub type Label = usize;
 
 trait Idx {
@@ -18,7 +18,7 @@ impl Idx for usize {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub enum Mem {
     // rbp + val1
     Local(i32),
@@ -33,7 +33,7 @@ pub enum Mem {
     Offset(Register, i32, i32),
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 #[repr(C)]
 pub struct Assembler {
     data: Vec<u8>,
@@ -42,15 +42,11 @@ pub struct Assembler {
     pub labels: Vec<Option<usize>>,
 }
 
-
-
 impl Assembler {
-    
     pub fn emit_u32_at(&mut self, pos: i32, value: u32) {
         let buf = &mut self.data[pos as usize..];
         LittleEndian::write_u32(buf, value);
     }
-
 
     pub fn new() -> Assembler {
         Assembler {
@@ -78,7 +74,6 @@ impl Assembler {
         assert!(self.labels[lbl_idx].is_none());
         self.labels[lbl_idx] = Some(self.data.len());
     }
-
 
     pub fn emit_label(&mut self, lbl: Label) {
         let value = self.labels[lbl.index()];
@@ -111,21 +106,21 @@ impl Assembler {
             let mut slice = &mut self.data[jmp.at..];
             slice.write_u32::<LittleEndian>(diff as u32).unwrap();
         }
-    }   
+    }
 
     pub fn pos(&self) -> usize {
         self.data.len()
     }
 
-    pub fn emit(&mut self,byte: u8) {
+    pub fn emit(&mut self, byte: u8) {
         self.data.write_u8(byte).unwrap();
     }
 
-    pub fn emit32(&mut self,uint: u32) {
+    pub fn emit32(&mut self, uint: u32) {
         self.data.write_u32::<LittleEndian>(uint).unwrap();
     }
 
-    pub fn emit64(&mut self,ulong: u64) {
+    pub fn emit64(&mut self, ulong: u64) {
         self.data.write_u64::<LittleEndian>(ulong).unwrap();
     }
 }

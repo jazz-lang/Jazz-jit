@@ -1256,7 +1256,7 @@ pub fn lea(buf: &mut Assembler, dest: Register, src: Mem) {
     emit_mem(buf, dest, &src);
 }
 
-fn emit_rex_mem(buf: &mut Assembler, x64: u8, dest: Register, src: &Mem) {
+pub fn emit_rex_mem(buf: &mut Assembler, x64: u8, dest: Register, src: &Mem) {
     assert!(x64 == 0 || x64 == 1);
 
     let (base_msb, index_msb) = match src {
@@ -1276,7 +1276,7 @@ fn emit_rex_mem(buf: &mut Assembler, x64: u8, dest: Register, src: &Mem) {
     }
 }
 
-fn emit_mem(buf: &mut Assembler, dest: Register, src: &Mem) {
+pub fn emit_mem(buf: &mut Assembler, dest: Register, src: &Mem) {
     match src {
         &Mem::Local(offset) => {
             emit_membase(buf, RBP, offset, dest);
@@ -1868,7 +1868,7 @@ pub fn xorpd(buf: &mut Assembler, dest: XMMRegister, src: Mem) {
     sse_float_freg_mem_66(buf, true, 0x57, dest, src);
 }
 
-fn sse_float_freg_freg(
+pub fn sse_float_freg_freg(
     buf: &mut Assembler,
     dbl: bool,
     op: u8,
@@ -1888,7 +1888,7 @@ fn sse_float_freg_freg(
     emit_modrm(buf, 0b11, dest.and7(), src.and7());
 }
 
-fn sse_float_freg_mem(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: Mem) {
+pub fn sse_float_freg_mem(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: Mem) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -1898,7 +1898,7 @@ fn sse_float_freg_mem(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister,
     emit_mem(buf, unsafe { ::core::mem::transmute(dest) }, &src);
 }
 
-fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: Mem) {
+pub fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: Mem) {
     if dbl {
         emit_op(buf, 0x66);
     }
@@ -1913,7 +1913,7 @@ fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegist
     );
 }
 
-fn sse_float_freg_reg(
+pub fn sse_float_freg_reg(
     buf: &mut Assembler,
     dbl: bool,
     op: u8,
@@ -1934,7 +1934,7 @@ fn sse_float_freg_reg(
     emit_modrm(buf, 0b11, dest.and7(), src.and7());
 }
 
-fn sse_float_reg_freg(
+pub fn sse_float_reg_freg(
     buf: &mut Assembler,
     dbl: bool,
     op: u8,

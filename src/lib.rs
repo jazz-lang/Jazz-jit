@@ -8,6 +8,7 @@ pub mod dseg;
 pub mod assembler;
 pub mod utils;
 pub mod assembler_x64;
+pub mod vector_extension_x64;
 
 pub use self::utils::*;
 
