@@ -1,14 +1,12 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-
-
+pub mod assembler;
+pub mod assembler_x64;
+pub mod avx;
 pub mod constants_x64;
 pub mod dseg;
-pub mod assembler;
 pub mod utils;
-pub mod assembler_x64;
-pub mod vector_extension_x64;
 
 pub use self::utils::*;
 
@@ -32,7 +30,7 @@ impl MachineMode {
             MachineMode::Float32 => 4,
             MachineMode::Float64 => 8,
         }
-    } 
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

@@ -2,8 +2,8 @@ extern crate jazz_jit;
 
 use jazz_jit::assembler::Assembler;
 use jazz_jit::assembler_x64::*;
+use jazz_jit::avx::*;
 use jazz_jit::constants_x64::*;
-use jazz_jit::vector_extension_x64::*;
 extern crate capstone;
 
 use capstone::prelude::*;
