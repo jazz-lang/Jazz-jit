@@ -2,12 +2,10 @@ use crate::assembler::Mem;
 use crate::assembler::{Assembler, Label};
 use crate::assembler_x64 as asm;
 use crate::constants_x64::*;
+use crate::dseg::f32x4;
 use crate::CondCode;
 use crate::MachineMode;
-
-pub fn fits_i32(n: i64) -> bool {
-    n == (n as i32) as i64
-}
+pub fn fits_i32(n: i64) -> bool { n == (n as i32) as i64 }
 
 impl Assembler {
     pub fn load_int_const(&mut self, mode: MachineMode, dest: Register, imm: i64) {
@@ -20,6 +18,12 @@ impl Assembler {
             }
             MachineMode::Float32 | MachineMode::Float64 => unreachable!(),
         }
+    }
+
+    pub fn load_float4_const(&mut self, dest: XMMRegister, val: f32x4) {
+        let boxed = Box::new(val);
+        self.load_int_const(MachineMode::Ptr, RAX, Box::into_raw(boxed) as i64);
+        movups_load(self, dest, Mem::Base(RAX, 0));
     }
 
     pub fn load_float_const(&mut self, mode: MachineMode, dest: XMMRegister, imm: f64) {
@@ -40,13 +44,9 @@ impl Assembler {
         }
     }
 
-    pub fn load_true(&mut self, dest: Register) {
-        asm::emit_movl_imm_reg(self, 1, dest);
-    }
+    pub fn load_true(&mut self, dest: Register) { asm::emit_movl_imm_reg(self, 1, dest); }
 
-    pub fn load_false(&mut self, dest: Register) {
-        asm::emit_movl_imm_reg(self, 0, dest);
-    }
+    pub fn load_false(&mut self, dest: Register) { asm::emit_movl_imm_reg(self, 0, dest); }
 
     pub fn int_neg(&mut self, mode: MachineMode, dest: Register, src: Register) {
         let x64 = match mode {
@@ -97,13 +97,11 @@ impl Assembler {
         }
     }
 
-    pub fn float_add(
-        &mut self,
-        mode: MachineMode,
-        dest: XMMRegister,
-        lhs: XMMRegister,
-        rhs: XMMRegister,
-    ) {
+    pub fn float_add(&mut self,
+                     mode: MachineMode,
+                     dest: XMMRegister,
+                     lhs: XMMRegister,
+                     rhs: XMMRegister) {
         match mode {
             MachineMode::Float32 => asm::addss(self, lhs, rhs),
             MachineMode::Float64 => asm::addsd(self, lhs, rhs),
@@ -115,13 +113,11 @@ impl Assembler {
         }
     }
 
-    pub fn float_sub(
-        &mut self,
-        mode: MachineMode,
-        dest: XMMRegister,
-        lhs: XMMRegister,
-        rhs: XMMRegister,
-    ) {
+    pub fn float_sub(&mut self,
+                     mode: MachineMode,
+                     dest: XMMRegister,
+                     lhs: XMMRegister,
+                     rhs: XMMRegister) {
         match mode {
             MachineMode::Float32 => asm::subss(self, lhs, rhs),
             MachineMode::Float64 => asm::subsd(self, lhs, rhs),
@@ -133,13 +129,11 @@ impl Assembler {
         }
     }
 
-    pub fn float_mul(
-        &mut self,
-        mode: MachineMode,
-        dest: XMMRegister,
-        lhs: XMMRegister,
-        rhs: XMMRegister,
-    ) {
+    pub fn float_mul(&mut self,
+                     mode: MachineMode,
+                     dest: XMMRegister,
+                     lhs: XMMRegister,
+                     rhs: XMMRegister) {
         match mode {
             MachineMode::Float32 => asm::mulss(self, lhs, rhs),
             MachineMode::Float64 => asm::mulsd(self, lhs, rhs),
@@ -151,13 +145,11 @@ impl Assembler {
         }
     }
 
-    pub fn float_div(
-        &mut self,
-        mode: MachineMode,
-        dest: XMMRegister,
-        lhs: XMMRegister,
-        rhs: XMMRegister,
-    ) {
+    pub fn float_div(&mut self,
+                     mode: MachineMode,
+                     dest: XMMRegister,
+                     lhs: XMMRegister,
+                     rhs: XMMRegister) {
         match mode {
             MachineMode::Float32 => asm::divss(self, lhs, rhs),
             MachineMode::Float64 => asm::divsd(self, lhs, rhs),
@@ -261,9 +253,7 @@ impl Assembler {
         asm::emit_mov_reg_reg(self, x64, src, dest);
     }
 
-    pub fn copy_pc(&mut self, dest: Register) {
-        asm::lea(self, dest, Mem::Base(RIP, 0));
-    }
+    pub fn copy_pc(&mut self, dest: Register) { asm::lea(self, dest, Mem::Base(RIP, 0)); }
 
     pub fn copy_ra(&mut self, dest: Register) {
         self.load_mem(MachineMode::Ptr, Reg::Gpr(dest), Mem::Base(RSP, 0));
@@ -318,13 +308,9 @@ impl Assembler {
         }
     }
 
-    pub fn copy_sp(&mut self, dest: Register) {
-        self.copy_reg(MachineMode::Ptr, dest, RSP);
-    }
+    pub fn copy_sp(&mut self, dest: Register) { self.copy_reg(MachineMode::Ptr, dest, RSP); }
 
-    pub fn set_sp(&mut self, src: Register) {
-        self.copy_reg(MachineMode::Ptr, RSP, src);
-    }
+    pub fn set_sp(&mut self, src: Register) { self.copy_reg(MachineMode::Ptr, RSP, src); }
 
     pub fn copy_freg(&mut self, mode: MachineMode, dest: XMMRegister, src: XMMRegister) {
         match mode {
@@ -387,14 +373,12 @@ impl Assembler {
         asm::emit_cmp_imm_reg(self, mode, imm, lhs);
     }
 
-    pub fn float_cmp(
-        &mut self,
-        mode: MachineMode,
-        dest: Register,
-        lhs: XMMRegister,
-        rhs: XMMRegister,
-        cond: CondCode,
-    ) {
+    pub fn float_cmp(&mut self,
+                     mode: MachineMode,
+                     dest: Register,
+                     lhs: XMMRegister,
+                     rhs: XMMRegister,
+                     cond: CondCode) {
         let scratch = &R11;
 
         match cond {
@@ -479,17 +463,11 @@ impl Assembler {
         self.jump_if(cond, lbl);
     }
 
-    pub fn jump_if(&mut self, cond: CondCode, lbl: Label) {
-        asm::emit_jcc(self, cond, lbl);
-    }
+    pub fn jump_if(&mut self, cond: CondCode, lbl: Label) { asm::emit_jcc(self, cond, lbl); }
 
-    pub fn jump(&mut self, lbl: Label) {
-        asm::emit_jmp(self, lbl);
-    }
+    pub fn jump(&mut self, lbl: Label) { asm::emit_jmp(self, lbl); }
 
-    pub fn jump_reg(&mut self, reg: Register) {
-        asm::emit_jmp_reg(self, reg);
-    }
+    pub fn jump_reg(&mut self, reg: Register) { asm::emit_jmp_reg(self, reg); }
 
     pub fn int_div(&mut self, mode: MachineMode, dest: Register, lhs: Register, rhs: Register) {
         self.div_common(mode, dest, lhs, rhs, RAX);
@@ -499,14 +477,12 @@ impl Assembler {
         self.div_common(mode, dest, lhs, rhs, RDX);
     }
 
-    fn div_common(
-        &mut self,
-        mode: MachineMode,
-        dest: Register,
-        lhs: Register,
-        rhs: Register,
-        result: Register,
-    ) {
+    fn div_common(&mut self,
+                  mode: MachineMode,
+                  dest: Register,
+                  lhs: Register,
+                  rhs: Register,
+                  result: Register) {
         let x64 = match mode {
             MachineMode::Int32 => 0,
             MachineMode::Int64 => 1,
@@ -693,13 +669,11 @@ impl Assembler {
         }
     }
 
-    pub fn int_to_float(
-        &mut self,
-        dest_mode: MachineMode,
-        dest: XMMRegister,
-        src_mode: MachineMode,
-        src: Register,
-    ) {
+    pub fn int_to_float(&mut self,
+                        dest_mode: MachineMode,
+                        dest: XMMRegister,
+                        src_mode: MachineMode,
+                        src: Register) {
         asm::pxor(self, dest, dest);
 
         let x64 = match src_mode {
@@ -715,13 +689,11 @@ impl Assembler {
         }
     }
 
-    pub fn float_to_int(
-        &mut self,
-        dest_mode: MachineMode,
-        dest: Register,
-        src_mode: MachineMode,
-        src: XMMRegister,
-    ) {
+    pub fn float_to_int(&mut self,
+                        dest_mode: MachineMode,
+                        dest: Register,
+                        src_mode: MachineMode,
+                        src: XMMRegister) {
         let x64 = match dest_mode {
             MachineMode::Int32 => 0,
             MachineMode::Int64 => 1,
@@ -818,15 +790,13 @@ pub fn emit_movq_memq_reg(buf: &mut Assembler, src: Register, disp: i32, dest: R
     emit_mov_memq_reg(buf, 0, 1, 0x8b, src, disp, dest);
 }
 
-fn emit_mov_memq_reg(
-    buf: &mut Assembler,
-    rex_prefix: u8,
-    x64: u8,
-    opcode: u8,
-    src: Register,
-    disp: i32,
-    dest: Register,
-) {
+fn emit_mov_memq_reg(buf: &mut Assembler,
+                     rex_prefix: u8,
+                     x64: u8,
+                     opcode: u8,
+                     src: Register,
+                     disp: i32,
+                     dest: Register) {
     let src_msb = if src == RIP { 0 } else { src.msb() };
 
     if src_msb != 0 || dest.msb() != 0 || x64 != 0 || rex_prefix != 0 {
@@ -868,13 +838,11 @@ pub fn emit_movb_imm_memq(buf: &mut Assembler, imm: u8, dest: Register, disp: i3
     emit(buf, imm);
 }
 
-pub fn emit_movb_imm_memscaleq(
-    buf: &mut Assembler,
-    imm: u8,
-    base: Register,
-    index: Register,
-    scale: u8,
-) {
+pub fn emit_movb_imm_memscaleq(buf: &mut Assembler,
+                               imm: u8,
+                               base: Register,
+                               index: Register,
+                               scale: u8) {
     if index.msb() != 0 || base.msb() != 0 {
         emit_rex(buf, 0, 0, index.msb(), base.msb());
     }
@@ -885,55 +853,45 @@ pub fn emit_movb_imm_memscaleq(
     emit(buf, imm);
 }
 
-pub fn emit_movq_ar(
-    buf: &mut Assembler,
-    base: Register,
-    index: Register,
-    scale: u8,
-    dest: Register,
-) {
+pub fn emit_movq_ar(buf: &mut Assembler,
+                    base: Register,
+                    index: Register,
+                    scale: u8,
+                    dest: Register) {
     emit_mov_ar(buf, 1, 0x8b, base, index, scale, dest);
 }
 
-pub fn emit_movl_ar(
-    buf: &mut Assembler,
-    base: Register,
-    index: Register,
-    scale: u8,
-    dest: Register,
-) {
+pub fn emit_movl_ar(buf: &mut Assembler,
+                    base: Register,
+                    index: Register,
+                    scale: u8,
+                    dest: Register) {
     emit_mov_ar(buf, 0, 0x8b, base, index, scale, dest);
 }
 
-pub fn emit_movq_ra(
-    buf: &mut Assembler,
-    src: Register,
-    base: Register,
-    index: Register,
-    scale: u8,
-) {
+pub fn emit_movq_ra(buf: &mut Assembler,
+                    src: Register,
+                    base: Register,
+                    index: Register,
+                    scale: u8) {
     emit_mov_ar(buf, 1, 0x89, base, index, scale, src);
 }
 
-pub fn emit_movl_ra(
-    buf: &mut Assembler,
-    src: Register,
-    base: Register,
-    index: Register,
-    scale: u8,
-) {
+pub fn emit_movl_ra(buf: &mut Assembler,
+                    src: Register,
+                    base: Register,
+                    index: Register,
+                    scale: u8) {
     emit_mov_ar(buf, 0, 0x89, base, index, scale, src);
 }
 
-fn emit_mov_ar(
-    buf: &mut Assembler,
-    x64: u8,
-    opcode: u8,
-    base: Register,
-    index: Register,
-    scale: u8,
-    dest: Register,
-) {
+fn emit_mov_ar(buf: &mut Assembler,
+               x64: u8,
+               opcode: u8,
+               base: Register,
+               index: Register,
+               scale: u8,
+               dest: Register) {
     assert!(scale == 8 || scale == 4 || scale == 2 || scale == 1);
 
     if x64 != 0 || dest.msb() != 0 || index.msb() != 0 || base.msb() != 0 {
@@ -952,14 +910,12 @@ fn emit_mov_ar(
     emit_sib(buf, scale, index.and7(), base.and7());
 }
 
-fn emit_mov_reg_memq(
-    buf: &mut Assembler,
-    opcode: u8,
-    x64: u8,
-    src: Register,
-    dest: Register,
-    disp: i32,
-) {
+fn emit_mov_reg_memq(buf: &mut Assembler,
+                     opcode: u8,
+                     x64: u8,
+                     src: Register,
+                     dest: Register,
+                     disp: i32) {
     let dest_msb = if dest == RIP { 0 } else { dest.msb() };
 
     if dest_msb != 0 || src.msb() != 0 || x64 != 0 {
@@ -1021,14 +977,12 @@ pub fn emit_andq_imm_reg(buf: &mut Assembler, imm: i32, reg: Register) {
     emit_aluq_imm_reg(buf, 1, imm, reg, 0x25, 4);
 }
 
-fn emit_aluq_imm_reg(
-    buf: &mut Assembler,
-    x64: u8,
-    imm: i32,
-    reg: Register,
-    rax_opcode: u8,
-    modrm_reg: u8,
-) {
+fn emit_aluq_imm_reg(buf: &mut Assembler,
+                     x64: u8,
+                     imm: i32,
+                     reg: Register,
+                     rax_opcode: u8,
+                     modrm_reg: u8) {
     assert!(x64 == 0 || x64 == 1);
 
     if x64 != 0 || reg.msb() != 0 {
@@ -1087,14 +1041,12 @@ pub fn emit_andb_imm_reg(buf: &mut Assembler, imm: u8, dest: Register) {
     emit_alub_imm_reg(buf, 0x80, 0x24, 0b100, imm, dest);
 }
 
-fn emit_alub_imm_reg(
-    buf: &mut Assembler,
-    opcode: u8,
-    rax_opcode: u8,
-    modrm_reg: u8,
-    imm: u8,
-    dest: Register,
-) {
+fn emit_alub_imm_reg(buf: &mut Assembler,
+                     opcode: u8,
+                     rax_opcode: u8,
+                     modrm_reg: u8,
+                     imm: u8,
+                     dest: Register) {
     if dest == RAX {
         emit_op(buf, rax_opcode);
         emit(buf, imm);
@@ -1143,29 +1095,17 @@ pub fn emit_popq_reg(buf: &mut Assembler, reg: Register) {
     emit_op(buf, 0x58 + reg.and7());
 }
 
-pub fn emit_retq(buf: &mut Assembler) {
-    emit_op(buf, 0xC3);
-}
+pub fn emit_retq(buf: &mut Assembler) { emit_op(buf, 0xC3); }
 
-pub fn emit_nop(buf: &mut Assembler) {
-    emit_op(buf, 0x90);
-}
+pub fn emit_nop(buf: &mut Assembler) { emit_op(buf, 0x90); }
 
-pub fn emit64(buf: &mut Assembler, val: u64) {
-    buf.emit64(val)
-}
+pub fn emit64(buf: &mut Assembler, val: u64) { buf.emit64(val) }
 
-pub fn emit32(buf: &mut Assembler, val: u32) {
-    buf.emit32(val)
-}
+pub fn emit32(buf: &mut Assembler, val: u32) { buf.emit32(val) }
 
-pub fn emit(buf: &mut Assembler, val: u8) {
-    buf.emit(val)
-}
+pub fn emit(buf: &mut Assembler, val: u8) { buf.emit(val) }
 
-pub fn emit_op(buf: &mut Assembler, opcode: u8) {
-    buf.emit(opcode);
-}
+pub fn emit_op(buf: &mut Assembler, opcode: u8) { buf.emit(opcode); }
 
 pub fn emit_rex(buf: &mut Assembler, w: u8, r: u8, x: u8, b: u8) {
     assert!(w == 0 || w == 1);
@@ -1192,9 +1132,7 @@ pub fn emit_sib(buf: &mut Assembler, scale: u8, index: u8, base: u8) {
     buf.emit(scale << 6 | index << 3 | base);
 }
 
-pub fn fits_i8(imm: i32) -> bool {
-    imm == (imm as i8) as i32
-}
+pub fn fits_i8(imm: i32) -> bool { imm == (imm as i8) as i32 }
 
 pub fn emit_jcc(buf: &mut Assembler, cond: CondCode, lbl: Label) {
     let opcode = match cond {
@@ -1344,13 +1282,11 @@ pub fn emit_cmp_reg_reg(buf: &mut Assembler, x64: u8, src: Register, dest: Regis
     emit_alu_reg_reg(buf, x64, 0x39, src, dest);
 }
 
-pub fn emit_cmp_mem_reg(
-    buf: &mut Assembler,
-    mode: MachineMode,
-    base: Register,
-    disp: i32,
-    dest: Register,
-) {
+pub fn emit_cmp_mem_reg(buf: &mut Assembler,
+                        mode: MachineMode,
+                        base: Register,
+                        disp: i32,
+                        dest: Register) {
     let base_msb = if base == RIP { 0 } else { base.msb() };
 
     let (x64, opcode) = match mode {
@@ -1369,15 +1305,13 @@ pub fn emit_cmp_mem_reg(
     emit_membase(buf, base, disp, dest);
 }
 
-pub fn emit_mov_memindex_reg(
-    buf: &mut Assembler,
-    mode: MachineMode,
-    base: Register,
-    index: Register,
-    scale: i32,
-    disp: i32,
-    dest: Register,
-) {
+pub fn emit_mov_memindex_reg(buf: &mut Assembler,
+                             mode: MachineMode,
+                             base: Register,
+                             index: Register,
+                             scale: i32,
+                             disp: i32,
+                             dest: Register) {
     assert!(scale == 8 || scale == 4 || scale == 2 || scale == 1);
     assert!(mode.size() as i32 == scale);
 
@@ -1396,14 +1330,12 @@ pub fn emit_mov_memindex_reg(
     emit_membase_with_index_and_scale(buf, base, index, scale, disp, dest);
 }
 
-pub fn emit_movzx_memindex_byte_reg(
-    buf: &mut Assembler,
-    x64: u8,
-    base: Register,
-    index: Register,
-    disp: i32,
-    dest: Register,
-) {
+pub fn emit_movzx_memindex_byte_reg(buf: &mut Assembler,
+                                    x64: u8,
+                                    base: Register,
+                                    index: Register,
+                                    disp: i32,
+                                    dest: Register) {
     if x64 != 0 || dest.msb() != 0 || index.msb() != 0 || base.msb() != 0 {
         emit_rex(buf, x64, dest.msb(), index.msb(), base.msb());
     }
@@ -1413,15 +1345,13 @@ pub fn emit_movzx_memindex_byte_reg(
     emit_membase_with_index_and_scale(buf, base, index, 1, disp, dest);
 }
 
-pub fn emit_mov_reg_memindex(
-    buf: &mut Assembler,
-    mode: MachineMode,
-    src: Register,
-    base: Register,
-    index: Register,
-    scale: i32,
-    disp: i32,
-) {
+pub fn emit_mov_reg_memindex(buf: &mut Assembler,
+                             mode: MachineMode,
+                             src: Register,
+                             base: Register,
+                             index: Register,
+                             scale: i32,
+                             disp: i32) {
     assert!(scale == 8 || scale == 4 || scale == 2 || scale == 1);
 
     let (x64, opcode) = match mode {
@@ -1439,13 +1369,11 @@ pub fn emit_mov_reg_memindex(
     emit_membase_with_index_and_scale(buf, base, index, scale, disp, src);
 }
 
-pub fn emit_cmp_mem_imm(
-    buf: &mut Assembler,
-    mode: MachineMode,
-    base: Register,
-    disp: i32,
-    imm: i32,
-) {
+pub fn emit_cmp_mem_imm(buf: &mut Assembler,
+                        mode: MachineMode,
+                        base: Register,
+                        disp: i32,
+                        imm: i32) {
     let base_msb = if base == RIP { 0 } else { base.msb() };
 
     let opcode = if fits_i8(imm) { 0x83 } else { 0x81 };
@@ -1476,15 +1404,13 @@ pub fn emit_cmp_mem_imm(
     }
 }
 
-pub fn emit_cmp_memindex_reg(
-    buf: &mut Assembler,
-    mode: MachineMode,
-    base: Register,
-    index: Register,
-    scale: i32,
-    disp: i32,
-    dest: Register,
-) {
+pub fn emit_cmp_memindex_reg(buf: &mut Assembler,
+                             mode: MachineMode,
+                             base: Register,
+                             index: Register,
+                             scale: i32,
+                             disp: i32,
+                             dest: Register) {
     assert!(scale == 8 || scale == 4 || scale == 2 || scale == 1);
 
     let (x64, opcode) = match mode {
@@ -1503,13 +1429,11 @@ pub fn emit_cmp_memindex_reg(
     emit_membase_with_index_and_scale(buf, base, index, scale, disp, dest);
 }
 
-fn emit_membase_without_base(
-    buf: &mut Assembler,
-    index: Register,
-    scale: i32,
-    disp: i32,
-    dest: Register,
-) {
+fn emit_membase_without_base(buf: &mut Assembler,
+                             index: Register,
+                             scale: i32,
+                             disp: i32,
+                             dest: Register) {
     assert!(scale == 8 || scale == 4 || scale == 2 || scale == 1);
 
     let scale = match scale {
@@ -1524,14 +1448,12 @@ fn emit_membase_without_base(
     emit32(buf, disp as u32);
 }
 
-fn emit_membase_with_index_and_scale(
-    buf: &mut Assembler,
-    base: Register,
-    index: Register,
-    scale: i32,
-    disp: i32,
-    dest: Register,
-) {
+fn emit_membase_with_index_and_scale(buf: &mut Assembler,
+                                     base: Register,
+                                     index: Register,
+                                     scale: i32,
+                                     disp: i32,
+                                     dest: Register) {
     assert!(scale == 8 || scale == 4 || scale == 2 || scale == 1);
 
     let scale = match scale {
@@ -1555,9 +1477,7 @@ fn emit_membase_with_index_and_scale(
     }
 }
 
-pub fn emit_cdq(buf: &mut Assembler) {
-    emit_op(buf, 0x99);
-}
+pub fn emit_cdq(buf: &mut Assembler) { emit_op(buf, 0x99); }
 
 pub fn emit_cqo(buf: &mut Assembler) {
     emit_rex(buf, 1, 0, 0, 0);
@@ -1774,6 +1694,50 @@ pub fn sqrtsd(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
     sse_float_freg_freg(buf, true, 0x51, dest, src);
 }
 
+pub fn movaps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x28, dest, src);
+}
+pub fn movups(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x10, dest, src);
+}
+
+pub fn movups_load(buf: &mut Assembler, dest: XMMRegister, src: Mem) {
+    sse_packed_freg_mem(buf, 0x10, dest, src)
+}
+pub fn movups_store(buf: &mut Assembler, dest: Mem, src: XMMRegister) {
+    sse_packed_freg_mem(buf, 0x11, src, dest);
+}
+
+pub fn movaps_load(buf: &mut Assembler, dest: XMMRegister, src: Mem) {
+    sse_packed_freg_mem(buf, 0x28, dest, src)
+}
+pub fn movaps_store(buf: &mut Assembler, dest: Mem, src: XMMRegister) {
+    sse_packed_freg_mem(buf, 0x29, src, dest);
+}
+
+pub fn addps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x58, dest, src);
+}
+
+pub fn subps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x5c, dest, src);
+}
+
+pub fn mulps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x59, dest, src);
+}
+
+pub fn divps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x5e, dest, src);
+}
+
+pub fn sqrtps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x51, dest, src);
+}
+
+pub fn movlps(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
+    sse_packed_freg_freg(buf, 0x45, dest, src);
+}
 pub fn movss(buf: &mut Assembler, dest: XMMRegister, src: XMMRegister) {
     sse_float_freg_freg(buf, false, 0x10, dest, src);
 }
@@ -1868,13 +1832,20 @@ pub fn xorpd(buf: &mut Assembler, dest: XMMRegister, src: Mem) {
     sse_float_freg_mem_66(buf, true, 0x57, dest, src);
 }
 
-pub fn sse_float_freg_freg(
-    buf: &mut Assembler,
-    dbl: bool,
-    op: u8,
-    dest: XMMRegister,
-    src: XMMRegister,
-) {
+pub fn sse_packed_freg_freg(buf: &mut Assembler, op: u8, dest: XMMRegister, src: XMMRegister) {
+    if dest.msb() != 0 || src.msb() != 0 {
+        emit_rex(buf, 0, dest.msb(), 0, src.msb());
+    }
+    emit_op(buf, 0x0f);
+    emit_op(buf, op);
+    emit_modrm(buf, 0b11, dest.and7(), src.and7());
+}
+
+pub fn sse_float_freg_freg(buf: &mut Assembler,
+                           dbl: bool,
+                           op: u8,
+                           dest: XMMRegister,
+                           src: XMMRegister) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -1898,6 +1869,13 @@ pub fn sse_float_freg_mem(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegis
     emit_mem(buf, unsafe { ::core::mem::transmute(dest) }, &src);
 }
 
+pub fn sse_packed_freg_mem(buf: &mut Assembler, op: u8, dest: XMMRegister, src: Mem) {
+    emit_rex_mem(buf, 0, unsafe { ::core::mem::transmute(dest) }, &src);
+    emit_op(buf, 0x0f);
+    emit_op(buf, op);
+    emit_mem(buf, unsafe { ::core::mem::transmute(dest) }, &src);
+}
+
 pub fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRegister, src: Mem) {
     if dbl {
         emit_op(buf, 0x66);
@@ -1906,21 +1884,17 @@ pub fn sse_float_freg_mem_66(buf: &mut Assembler, dbl: bool, op: u8, dest: XMMRe
     emit_rex_mem(buf, 0, unsafe { ::core::mem::transmute(dest) }, &src);
     emit_op(buf, 0x0f);
     emit_op(buf, op);
-    emit_mem(
-        buf,
-        /*Register(dest.0)*/ unsafe { ::core::mem::transmute(dest) },
-        &src,
-    );
+    emit_mem(buf,
+             /*Register(dest.0)*/ unsafe { ::core::mem::transmute(dest) },
+             &src);
 }
 
-pub fn sse_float_freg_reg(
-    buf: &mut Assembler,
-    dbl: bool,
-    op: u8,
-    dest: XMMRegister,
-    x64: u8,
-    src: Register,
-) {
+pub fn sse_float_freg_reg(buf: &mut Assembler,
+                          dbl: bool,
+                          op: u8,
+                          dest: XMMRegister,
+                          x64: u8,
+                          src: Register) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -1934,14 +1908,12 @@ pub fn sse_float_freg_reg(
     emit_modrm(buf, 0b11, dest.and7(), src.and7());
 }
 
-pub fn sse_float_reg_freg(
-    buf: &mut Assembler,
-    dbl: bool,
-    op: u8,
-    x64: u8,
-    dest: Register,
-    src: XMMRegister,
-) {
+pub fn sse_float_reg_freg(buf: &mut Assembler,
+                          dbl: bool,
+                          op: u8,
+                          x64: u8,
+                          dest: Register,
+                          src: XMMRegister) {
     let prefix = if dbl { 0xf2 } else { 0xf3 };
 
     emit_op(buf, prefix);
@@ -2004,15 +1976,13 @@ fn sse_optional_rex32_fm(asm: &mut Assembler, reg: XMMRegister, base: Mem) {
     }
 }
 
-fn ssse3_or_4_instr(
-    asm: &mut Assembler,
-    dst: XMMRegister,
-    src: XMMRegister,
-    prefix: u8,
-    escape1: u8,
-    escape2: u8,
-    opcode: u8,
-) {
+fn ssse3_or_4_instr(asm: &mut Assembler,
+                    dst: XMMRegister,
+                    src: XMMRegister,
+                    prefix: u8,
+                    escape1: u8,
+                    escape2: u8,
+                    opcode: u8) {
     asm.emit(prefix);
     sse_optional_rex_32_ff(asm, dst, src);
     asm.emit(escape1);
@@ -2021,15 +1991,13 @@ fn ssse3_or_4_instr(
     emit_sse_ff(asm, dst, src)
 }
 
-fn ssse3_or_4_instr_mem(
-    asm: &mut Assembler,
-    dst: XMMRegister,
-    src: Mem,
-    prefix: u8,
-    escape1: u8,
-    escape2: u8,
-    opcode: u8,
-) {
+fn ssse3_or_4_instr_mem(asm: &mut Assembler,
+                        dst: XMMRegister,
+                        src: Mem,
+                        prefix: u8,
+                        escape1: u8,
+                        escape2: u8,
+                        opcode: u8) {
     asm.emit(prefix);
     sse_optional_rex32_fm(asm, dst, src);
     asm.emit(escape1);
@@ -2038,14 +2006,12 @@ fn ssse3_or_4_instr_mem(
     emit_sse_mem_f(asm, dst, src)
 }
 
-fn sse2_instr(
-    asm: &mut Assembler,
-    dst: XMMRegister,
-    src: XMMRegister,
-    prefix: u8,
-    escape: u8,
-    opcode: u8,
-) {
+fn sse2_instr(asm: &mut Assembler,
+              dst: XMMRegister,
+              src: XMMRegister,
+              prefix: u8,
+              escape: u8,
+              opcode: u8) {
     use crate::avx::emit_sse_ff;
     asm.emit(prefix);
     sse_optional_rex_32_ff(asm, dst, src);
@@ -2054,14 +2020,12 @@ fn sse2_instr(
     emit_sse_ff(asm, dst, src);
 }
 
-fn sse2_instr_mem(
-    asm: &mut Assembler,
-    dst: XMMRegister,
-    src: Mem,
-    prefix: u8,
-    escape: u8,
-    opcode: u8,
-) {
+fn sse2_instr_mem(asm: &mut Assembler,
+                  dst: XMMRegister,
+                  src: Mem,
+                  prefix: u8,
+                  escape: u8,
+                  opcode: u8) {
     asm.emit(prefix);
     sse_optional_rex32_fm(asm, dst, src);
     asm.emit(escape);
@@ -2358,1132 +2322,944 @@ use crate::avx::SIMDPrefix::*;
 
 //sse2_instr_list!(sse2_instr_def);
 pub fn vcvtps2dq_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        91,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            91,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vcvtps2dq(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        91,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           91,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpcklbw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        96,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            96,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpcklbw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        96,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           96,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpcklwd_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        97,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            97,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpcklwd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        97,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           97,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpckldq_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        98,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            98,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpckldq(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        98,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           98,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpacksswb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        99,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            99,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpacksswb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        99,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           99,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpackuswb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        103,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            103,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpackuswb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        103,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           103,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpckhbw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        104,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            104,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpckhbw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        104,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           104,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpckhwd_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        105,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            105,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpckhwd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        105,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           105,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpckhdq_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        106,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            106,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpckhdq(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        106,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           106,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpackssdw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        107,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            107,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpackssdw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        107,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           107,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpcklqdq_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        108,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            108,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpcklqdq(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        108,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           108,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpunpckhqdq_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        109,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            109,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpunpckhqdq(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        109,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           109,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        252,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            252,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        252,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           252,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        253,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            253,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        253,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           253,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddd_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        254,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            254,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        254,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           254,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddsb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        236,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            236,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddsb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        236,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           236,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddsw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        237,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            237,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddsw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        237,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           237,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddusb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        220,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            220,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddusb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        220,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           220,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpaddusw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        221,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            221,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpaddusw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        221,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           221,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpcmpeqb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        116,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            116,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpcmpeqb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        116,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           116,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpcmpeqw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        117,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            117,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpcmpeqw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        117,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           117,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpcmpeqd_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        118,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            118,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpcmpeqd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        118,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           118,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpcmpgtb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        100,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            100,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpcmpgtb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        100,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           100,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpcmpgtw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        101,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            101,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpcmpgtw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        101,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           101,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpcmpgtd_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        102,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            102,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpcmpgtd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        102,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           102,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpmaxsw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        238,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            238,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpmaxsw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        238,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           238,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpmaxub_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        222,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            222,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpmaxub(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        222,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           222,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpminsw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        234,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            234,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpminsw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        234,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           234,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpminub_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        218,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            218,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpminub(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        218,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           218,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpmullw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        213,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            213,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpmullw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        213,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           213,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpmuludq_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        244,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            244,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpmuludq(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        244,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           244,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsllw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        241,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            241,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsllw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        241,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           241,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpslld_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        242,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            242,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpslld(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        242,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           242,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsraw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        225,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            225,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsraw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        225,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           225,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsrad_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        226,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            226,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsrad(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        226,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           226,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsrlw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        209,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            209,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsrlw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        209,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           209,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsrld_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        210,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            210,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsrld(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        210,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           210,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        248,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            248,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        248,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           248,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        249,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            249,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        249,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           249,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubd_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        250,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            250,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        250,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           250,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubsb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        232,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            232,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubsb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        232,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           232,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubsw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        233,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            233,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubsw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        233,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           233,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubusb_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        216,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            216,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubusb(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        216,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           216,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpsubusw_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        217,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            217,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpsubusw(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        217,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           217,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpand_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        219,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            219,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpand(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        219,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           219,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpor_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        235,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            235,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpor(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        235,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           235,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn vpxor_mem(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    vinstrm(
-        asm,
-        239,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstrm(asm,
+            239,
+            dst,
+            src1,
+            src2,
+            k0x66,
+            crate::avx::LeadingOpcode::k0F,
+            crate::avx::VexW::W0);
 }
 pub fn vpxor(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        239,
-        dst,
-        src1,
-        src2,
-        k0x66,
-        crate::avx::LeadingOpcode::k0F,
-        crate::avx::VexW::W0,
-    );
+    vinstr(asm,
+           239,
+           dst,
+           src1,
+           src2,
+           k0x66,
+           crate::avx::LeadingOpcode::k0F,
+           crate::avx::VexW::W0);
 }
 pub fn pabsb_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
     ssse3_or_4_instr_mem(asm, dst, src, 102 as u8, 15, 56, 28);

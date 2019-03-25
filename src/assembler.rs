@@ -13,9 +13,7 @@ trait Idx {
 }
 
 impl Idx for usize {
-    fn index(&self) -> usize {
-        self.clone()
-    }
+    fn index(&self) -> usize { self.clone() }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
@@ -49,12 +47,10 @@ impl Assembler {
     }
 
     pub fn new() -> Assembler {
-        Assembler {
-            data: Vec::new(),
-            dseg: DSeg::new(),
-            jumps: Vec::new(),
-            labels: Vec::new(),
-        }
+        Assembler { data: Vec::new(),
+                    dseg: DSeg::new(),
+                    jumps: Vec::new(),
+                    labels: Vec::new() }
     }
 
     pub fn create_label(&mut self) -> usize {
@@ -64,9 +60,7 @@ impl Assembler {
         idx
     }
 
-    pub fn data<'r>(&'r self) -> &'r Vec<u8> {
-        &self.data
-    }
+    pub fn data<'r>(&'r self) -> &'r Vec<u8> { &self.data }
 
     pub fn bind_label(&mut self, lbl: usize) {
         let lbl_idx = lbl;
@@ -108,19 +102,11 @@ impl Assembler {
         }
     }
 
-    pub fn pos(&self) -> usize {
-        self.data.len()
-    }
+    pub fn pos(&self) -> usize { self.data.len() }
 
-    pub fn emit(&mut self, byte: u8) {
-        self.data.write_u8(byte).unwrap();
-    }
+    pub fn emit(&mut self, byte: u8) { self.data.write_u8(byte).unwrap(); }
 
-    pub fn emit32(&mut self, uint: u32) {
-        self.data.write_u32::<LittleEndian>(uint).unwrap();
-    }
+    pub fn emit32(&mut self, uint: u32) { self.data.write_u32::<LittleEndian>(uint).unwrap(); }
 
-    pub fn emit64(&mut self, ulong: u64) {
-        self.data.write_u64::<LittleEndian>(ulong).unwrap();
-    }
+    pub fn emit64(&mut self, ulong: u64) { self.data.write_u64::<LittleEndian>(ulong).unwrap(); }
 }

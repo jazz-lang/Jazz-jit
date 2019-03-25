@@ -7,7 +7,6 @@
 pub enum VectorLength {
     kL128 = 0x0,
     kL256 = 0x4,
-    kL512 = 1 << 17,
 }
 
 pub const kLIG: VectorLength = VectorLength::kL128;
@@ -24,6 +23,7 @@ pub const WIG: VexW = VexW::W0;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(i32)]
 pub enum LeadingOpcode {
+    None = 0x0,
     k0F = 0x1,
     k0F38 = 0x2,
     k0F3A = 0x3,
@@ -40,6 +40,17 @@ pub enum VexPrefix {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(i32)]
+pub enum AvxVecSize {
+    AVX_128bit = 0x0,
+    AVX_256bit = 0x1,
+    AVX_512bit = 0x2,
+    AVX_NoVec = 0x4,
+}
+
+use AvxVecSize::*;
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(i32)]
 pub enum ExexPrefix {
     EVEX_F = 0x04,
     EVEX_V = 0x08,
@@ -48,6 +59,36 @@ pub enum ExexPrefix {
     EVEX_Z = 0x80,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(i32)]
+pub enum EvexTupleType {
+    EVEX_FV = 0,
+    EVEX_HV = 4,
+    EVEX_FVM = 6,
+    EVEX_T1S = 7,
+    EVEX_T1F = 11,
+    EVEX_T2 = 13,
+    EVEX_T4 = 15,
+    EVEX_T8 = 17,
+    EVEX_HVM = 18,
+    EVEX_QVM = 19,
+    EVEX_OVM = 20,
+    EVEX_M128 = 21,
+    EVEX_DUP = 22,
+    EVEX_ETUP = 23,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(i32)]
+pub enum EvexInputSizeInBits {
+    EVEX_8bit = 0,
+    EVEX_16bit = 1,
+    EVEX_32bit = 2,
+    EVEX_64bit = 3,
+    EVEX_NObit = 4,
+}
+
+use EvexInputSizeInBits::*;
 use VexPrefix::*;
 pub const VEX_W: VexPrefix = VEX_R;
 
@@ -85,13 +126,11 @@ fn emit_vex3_byte1_2(asm: &mut Assembler, reg: XMMRegister, rm: Mem, m: LeadingO
     asm.emit(rxb | m as u8);
 }
 
-fn emit_vex2_byte1(
-    asm: &mut Assembler,
-    reg: XMMRegister,
-    v: XMMRegister,
-    l: VectorLength,
-    pp: SIMDPrefix,
-) {
+fn emit_vex2_byte1(asm: &mut Assembler,
+                   reg: XMMRegister,
+                   v: XMMRegister,
+                   l: VectorLength,
+                   pp: SIMDPrefix) {
     let rv = !((reg.high_bit() << 4) | v as u8) << 3;
     asm.emit(rv | l as u8 | pp as u8);
 }
@@ -101,16 +140,14 @@ fn emit_vex3_byte2(asm: &mut Assembler, w: VexW, v: XMMRegister, l: VectorLength
     asm.emit(w as u8 | ((!v & 0xf) << 3) | l as u8 | pp as u8);
 }
 
-fn emit_vex_prefixf(
-    asm: &mut Assembler,
-    reg: XMMRegister,
-    vreg: XMMRegister,
-    rm: XMMRegister,
-    l: VectorLength,
-    pp: SIMDPrefix,
-    mm: LeadingOpcode,
-    w: VexW,
-) {
+fn emit_vex_prefixf(asm: &mut Assembler,
+                    reg: XMMRegister,
+                    vreg: XMMRegister,
+                    rm: XMMRegister,
+                    l: VectorLength,
+                    pp: SIMDPrefix,
+                    mm: LeadingOpcode,
+                    w: VexW) {
     if rm.high_bit() != 0 || mm != LeadingOpcode::k0F || w != VexW::W0 {
         emit_vex3_byte0(asm);
         emit_vex3_byte1_1(asm, reg, rm, mm);
@@ -121,40 +158,45 @@ fn emit_vex_prefixf(
     }
 }
 
-fn emit_vex_prefixr(
-    asm: &mut Assembler,
-    reg: Register,
-    vreg: Register,
-    rm: Register,
-    l: VectorLength,
-    pp: SIMDPrefix,
-    mm: LeadingOpcode,
-    w: VexW,
-) {
+fn evex_prefix(asm: &mut Assembler,
+               vex_r: bool,
+               vex_b: bool,
+               vex_x: bool,
+               evex_r: bool,
+               enc: i32,
+               pre: SIMDPrefix,
+               op: LeadingOpcode) {
+    asm.emit(0x62);
+}
+
+fn emit_vex_prefixr(asm: &mut Assembler,
+                    reg: Register,
+                    vreg: Register,
+                    rm: Register,
+                    l: VectorLength,
+                    pp: SIMDPrefix,
+                    mm: LeadingOpcode,
+                    w: VexW) {
     unsafe {
-        emit_vex_prefixf(
-            asm,
-            mem::transmute(reg),
-            mem::transmute(vreg),
-            mem::transmute(rm),
-            l,
-            pp,
-            mm,
-            w,
-        );
+        emit_vex_prefixf(asm,
+                         mem::transmute(reg),
+                         mem::transmute(vreg),
+                         mem::transmute(rm),
+                         l,
+                         pp,
+                         mm,
+                         w);
     }
 }
 
-fn emit_vex_prefixfm(
-    asm: &mut Assembler,
-    reg: XMMRegister,
-    vreg: XMMRegister,
-    rm: Mem,
-    l: VectorLength,
-    pp: SIMDPrefix,
-    mm: LeadingOpcode,
-    w: VexW,
-) {
+fn emit_vex_prefixfm(asm: &mut Assembler,
+                     reg: XMMRegister,
+                     vreg: XMMRegister,
+                     rm: Mem,
+                     l: VectorLength,
+                     pp: SIMDPrefix,
+                     mm: LeadingOpcode,
+                     w: VexW) {
     let rex = emit_rex_memv(asm, 1, unsafe { mem::transmute(reg) }, &rm);
     if rex != 0 || mm != LeadingOpcode::k0F || w != VexW::W0 {
         emit_vex3_byte0(asm);
@@ -166,35 +208,27 @@ fn emit_vex_prefixfm(
     }
 }
 
-fn emit_vex_prefixrm(
-    asm: &mut Assembler,
-    reg: Register,
-    vreg: Register,
-    rm: Mem,
-    l: VectorLength,
-    pp: SIMDPrefix,
-    mm: LeadingOpcode,
-    w: VexW,
-) {
-    emit_vex_prefixfm(
-        asm,
-        unsafe { mem::transmute(reg) },
-        unsafe { mem::transmute(vreg) },
-        rm,
-        l,
-        pp,
-        mm,
-        w,
-    );
+fn emit_vex_prefixrm(asm: &mut Assembler,
+                     reg: Register,
+                     vreg: Register,
+                     rm: Mem,
+                     l: VectorLength,
+                     pp: SIMDPrefix,
+                     mm: LeadingOpcode,
+                     w: VexW) {
+    emit_vex_prefixfm(asm,
+                      unsafe { mem::transmute(reg) },
+                      unsafe { mem::transmute(vreg) },
+                      rm,
+                      l,
+                      pp,
+                      mm,
+                      w);
 }
 
-fn emit_vex2_byte0(asm: &mut Assembler) {
-    asm.emit(0xc5);
-}
+fn emit_vex2_byte0(asm: &mut Assembler) { asm.emit(0xc5); }
 
-fn emit_vex3_byte0(asm: &mut Assembler) {
-    asm.emit(0xc4);
-}
+fn emit_vex3_byte0(asm: &mut Assembler) { asm.emit(0xc4); }
 
 pub(crate) fn emit_rex_memv(buf: &mut Assembler, x64: u8, dest: Register, src: &Mem) -> u8 {
     assert!(x64 == 0 || x64 == 1);
@@ -216,7 +250,7 @@ pub(crate) fn emit_rex_memv(buf: &mut Assembler, x64: u8, dest: Register, src: &
     }
     return 0;
 }
-pub(crate) fn emit_rexv(buf: &mut Assembler, w: u8, r: u8, x: u8, b: u8) -> u8 {
+pub(crate) fn emit_rexv(_: &mut Assembler, w: u8, r: u8, x: u8, b: u8) -> u8 {
     assert!(w == 0 || w == 1);
     assert!(r == 0 || r == 1);
     assert!(x == 0 || x == 1);
@@ -240,261 +274,241 @@ pub(crate) fn emit_sse_mem_f(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
     emit_mem(asm, unsafe { mem::transmute(dst) }, &src);
 }
 
-pub fn vinstr(
-    asm: &mut Assembler,
-    op: u8,
-    dst: XMMRegister,
-    src1: XMMRegister,
-    src2: XMMRegister,
-    pp: SIMDPrefix,
-    m: LeadingOpcode,
-    w: VexW,
-) {
+pub fn vinstr(asm: &mut Assembler,
+              op: u8,
+              dst: XMMRegister,
+              src1: XMMRegister,
+              src2: XMMRegister,
+              pp: SIMDPrefix,
+              m: LeadingOpcode,
+              w: VexW) {
     emit_vex_prefixf(asm, dst, src1, src2, VectorLength::kL128, pp, m, w);
     asm.emit(op);
     emit_sse_ff(asm, dst, src2);
 }
 
-pub fn vinstrm(
-    asm: &mut Assembler,
-    op: u8,
-    dst: XMMRegister,
-    src1: XMMRegister,
-    src2: Mem,
-    pp: SIMDPrefix,
-    m: LeadingOpcode,
-    w: VexW,
-) {
+pub fn vinstrm(asm: &mut Assembler,
+               op: u8,
+               dst: XMMRegister,
+               src1: XMMRegister,
+               src2: Mem,
+               pp: SIMDPrefix,
+               m: LeadingOpcode,
+               w: VexW) {
     emit_vex_prefixfm(asm, dst, src1, src2, VectorLength::kL128, pp, m, w);
     asm.emit(op);
     emit_sse_mem_f(asm, dst, src2);
 }
 
 pub fn vps(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    emit_vex_prefixf(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::None,
-        LeadingOpcode::k0F,
-        WIG,
-    );
+    emit_vex_prefixf(asm,
+                     dst,
+                     src1,
+                     src2,
+                     VectorLength::kL128,
+                     SIMDPrefix::None,
+                     LeadingOpcode::k0F,
+                     WIG);
     asm.emit(op);
     emit_sse_ff(asm, dst, src2);
 }
 
 pub fn vpsm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    emit_vex_prefixfm(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::None,
-        LeadingOpcode::k0F,
-        WIG,
-    );
+    emit_vex_prefixfm(asm,
+                      dst,
+                      src1,
+                      src2,
+                      VectorLength::kL128,
+                      SIMDPrefix::None,
+                      LeadingOpcode::k0F,
+                      WIG);
     asm.emit(op);
     emit_sse_mem_f(asm, dst, src2);
 }
 
 pub fn vpd(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    emit_vex_prefixf(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        WIG,
-    );
+    emit_vex_prefixf(asm,
+                     dst,
+                     src1,
+                     src2,
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F,
+                     WIG);
     asm.emit(op);
     emit_sse_ff(asm, dst, src2);
 }
 
 pub fn vpdm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    emit_vex_prefixfm(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        WIG,
-    );
+    emit_vex_prefixfm(asm,
+                      dst,
+                      src1,
+                      src2,
+                      VectorLength::kL128,
+                      SIMDPrefix::k0x66,
+                      LeadingOpcode::k0F,
+                      WIG);
     asm.emit(op);
     emit_sse_mem_f(asm, dst, src2);
 }
 
 pub fn vfmasd(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    emit_vex_prefixf(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F38,
-        VexW::W1,
-    );
+    emit_vex_prefixf(asm,
+                     dst,
+                     src1,
+                     src2,
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F38,
+                     VexW::W1);
     asm.emit(op);
     emit_sse_ff(asm, dst, src2);
 }
 
 pub fn vfmasdm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    emit_vex_prefixfm(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F38,
-        VexW::W1,
-    );
+    emit_vex_prefixfm(asm,
+                      dst,
+                      src1,
+                      src2,
+                      VectorLength::kL128,
+                      SIMDPrefix::k0x66,
+                      LeadingOpcode::k0F38,
+                      VexW::W1);
     asm.emit(op);
     emit_sse_mem_f(asm, dst, src2);
 }
 
 pub fn vfmass(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    emit_vex_prefixf(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F38,
-        VexW::W0,
-    );
+    emit_vex_prefixf(asm,
+                     dst,
+                     src1,
+                     src2,
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F38,
+                     VexW::W0);
     asm.emit(op);
     emit_sse_ff(asm, dst, src2);
 }
 
 pub fn vfmassm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-    emit_vex_prefixfm(
-        asm,
-        dst,
-        src1,
-        src2,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F38,
-        VexW::W0,
-    );
+    emit_vex_prefixfm(asm,
+                      dst,
+                      src1,
+                      src2,
+                      VectorLength::kL128,
+                      SIMDPrefix::k0x66,
+                      LeadingOpcode::k0F38,
+                      VexW::W0);
     asm.emit(op);
     emit_sse_mem_f(asm, dst, src2);
 }
 
 pub fn vmovd_freg_reg(asm: &mut Assembler, dst: XMMRegister, src: Register) {
-    emit_vex_prefixf(
-        asm,
-        dst,
-        XMM0,
-        unsafe { mem::transmute(src) },
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W0,
-    );
+    emit_vex_prefixf(asm,
+                     dst,
+                     XMM0,
+                     unsafe { mem::transmute(src) },
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F,
+                     VexW::W0);
     asm.emit(0x6e);
     emit_sse_fr(asm, dst, src);
 }
 pub fn vmovd_freg_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
-    emit_vex_prefixfm(
-        asm,
-        dst,
-        XMM0,
-        unsafe { mem::transmute(src) },
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W0,
-    );
+    emit_vex_prefixfm(asm,
+                      dst,
+                      XMM0,
+                      unsafe { mem::transmute(src) },
+                      VectorLength::kL128,
+                      SIMDPrefix::k0x66,
+                      LeadingOpcode::k0F,
+                      VexW::W0);
     asm.emit(0x6e);
     emit_sse_mem_f(asm, dst, src);
 }
 pub fn vmovd_reg_freg(asm: &mut Assembler, dst: Register, src: XMMRegister) {
     let idst: XMMRegister = unsafe { mem::transmute(dst) };
-    emit_vex_prefixf(
-        asm,
-        src,
-        XMM0,
-        idst,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W0,
-    );
+    emit_vex_prefixf(asm,
+                     src,
+                     XMM0,
+                     idst,
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F,
+                     VexW::W0);
     asm.emit(0x7e);
     emit_sse_rf(asm, dst, src);
 }
 
 pub fn vmovq_freg_reg(asm: &mut Assembler, dst: XMMRegister, src: Register) {
-    emit_vex_prefixf(
-        asm,
-        dst,
-        XMM0,
-        unsafe { mem::transmute(src) },
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W1,
-    );
+    emit_vex_prefixf(asm,
+                     dst,
+                     XMM0,
+                     unsafe { mem::transmute(src) },
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F,
+                     VexW::W1);
     asm.emit(0x6e);
     emit_sse_fr(asm, dst, src);
 }
 pub fn vmovq_freg_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
-    emit_vex_prefixfm(
-        asm,
-        dst,
-        XMM0,
-        unsafe { mem::transmute(src) },
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W1,
-    );
+    emit_vex_prefixfm(asm,
+                      dst,
+                      XMM0,
+                      unsafe { mem::transmute(src) },
+                      VectorLength::kL128,
+                      SIMDPrefix::k0x66,
+                      LeadingOpcode::k0F,
+                      VexW::W1);
     asm.emit(0x6e);
     emit_sse_mem_f(asm, dst, src);
 }
 pub fn vmovq_reg_freg(asm: &mut Assembler, dst: Register, src: XMMRegister) {
     let idst: XMMRegister = unsafe { mem::transmute(dst) };
-    emit_vex_prefixf(
-        asm,
-        src,
-        XMM0,
-        idst,
-        VectorLength::kL128,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W1,
-    );
+    emit_vex_prefixf(asm,
+                     src,
+                     XMM0,
+                     idst,
+                     VectorLength::kL128,
+                     SIMDPrefix::k0x66,
+                     LeadingOpcode::k0F,
+                     VexW::W1);
     asm.emit(0x7e);
     emit_sse_rf(asm, dst, src);
 }
 
 pub fn vaddpd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(
-        asm,
-        0x58,
-        dst,
-        src1,
-        src2,
-        SIMDPrefix::k0x66,
-        LeadingOpcode::k0F,
-        VexW::W1,
-    );
+    vinstr(asm,
+           0x58,
+           dst,
+           src1,
+           src2,
+           SIMDPrefix::k0x66,
+           LeadingOpcode::k0F,
+           VexW::W1);
 }
 
 macro_rules! avx_instr {
     ($name: ident, $op: expr, $prefix: expr,$escape: expr,$vex: expr) => {
         pub fn $name(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
             vinstr(asm, $op, dst, src1, src2, $prefix, $escape, $vex);
+        }
+
+        paste::item! {
+            pub fn [<$name _mem>] (asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
+                vinstrm(asm,$op,dst,src1,src2,$prefix,$escape,$vex);
+            }
+        }
+    };
+}
+
+macro_rules! avx_mem_instr {
+    ($name: ident, $op: expr, $prefix: expr,$escape: expr,$vex: expr) => {
+        pub fn $name(asm: &mut Assembler, dst: XMMRegister, src2: Mem) {
+            vinstrm(asm, $op, dst, XMM0, src2, $prefix, $escape, $vex);
         }
     };
 }
@@ -510,35 +524,102 @@ macro_rules! avx_instr_2op {
     };
 }
 
-avx_instr!(vaddps, 0x58, SIMDPrefix::None, LeadingOpcode::k0F, VexW::W1);
-avx_instr!(
-    vaddsd,
-    0x58,
-    SIMDPrefix::k0xf2,
-    LeadingOpcode::k0F,
-    VexW::W1
-);
-avx_instr!(
-    vaddss,
-    0x58,
-    SIMDPrefix::k0xf3,
-    LeadingOpcode::k0F,
-    VexW::W1
-);
-avx_instr!(
-    vandnpd,
-    0x55,
-    SIMDPrefix::k0x66,
-    LeadingOpcode::k0F,
-    VexW::W1
-);
-avx_instr!(
-    vandnps,
-    0x55,
-    SIMDPrefix::None,
-    LeadingOpcode::k0F,
-    VexW::W1
-);
+pub fn vmovaps(asm: &mut Assembler, dst: XMMRegister, src: XMMRegister) {
+    vps(asm, 0x28, dst, XMM0, src);
+}
+pub fn vmovaps_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
+    vpsm(asm, 0x28, dst, XMM0, src);
+}
+
+avx_instr!(vaddps, 0x58, SIMDPrefix::None, LeadingOpcode::k0F, VexW::W0);
+avx_instr!(vaddsd,
+           0x58,
+           SIMDPrefix::k0xf2,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vaddss,
+           0x58,
+           SIMDPrefix::k0xf3,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vandnpd,
+           0x55,
+           SIMDPrefix::k0x66,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vandnps,
+           0x55,
+           SIMDPrefix::None,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsubpd,
+           0x5c,
+           SIMDPrefix::k0x66,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsubsd,
+           0x5c,
+           SIMDPrefix::k0xf2,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsubss,
+           0x5c,
+           SIMDPrefix::k0xf3,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsubps, 0x5c, SIMDPrefix::None, LeadingOpcode::k0F, VexW::W0);
+avx_instr!(vmulpd,
+           0x59,
+           SIMDPrefix::k0x66,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vmulps, 0x59, SIMDPrefix::None, LeadingOpcode::k0F, VexW::W0);
+avx_instr!(vmulss,
+           0x59,
+           SIMDPrefix::k0xf3,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vmulsd,
+           0x59,
+           SIMDPrefix::k0xf2,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vdivpd,
+           0x5e,
+           SIMDPrefix::k0x66,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vdivps, 0x5e, SIMDPrefix::None, LeadingOpcode::k0F, VexW::W0);
+avx_instr!(vdivss,
+           0x5e,
+           SIMDPrefix::k0xf3,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vdivsd,
+           0x5e,
+           SIMDPrefix::k0xf2,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsqrtpd,
+           0x51,
+           SIMDPrefix::k0x66,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsqrtps,
+           0x51,
+           SIMDPrefix::None,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsqrtss,
+           0x51,
+           SIMDPrefix::k0xf3,
+           LeadingOpcode::k0F,
+           VexW::W0);
+avx_instr!(vsqrtsd,
+           0x51,
+           SIMDPrefix::k0xf2,
+           LeadingOpcode::k0F,
+           VexW::W0);
 
 /*avx_instr_2op!(
     vbroadcastf128,

@@ -24,9 +24,7 @@ pub enum Register {
 
 impl Register {
     #[inline]
-    pub fn is_basic_reg(self) -> bool {
-        self == RAX || self == RBX || self == RCX || self == RDX
-    }
+    pub fn is_basic_reg(self) -> bool { self == RAX || self == RBX || self == RCX || self == RDX }
     #[inline]
     pub fn msb(self) -> u8 {
         assert!(self != RIP);
@@ -42,14 +40,10 @@ impl Register {
     }
 
     #[inline]
-    pub fn high_bit(&self) -> u8 {
-        self.msb()
-    }
+    pub fn high_bit(&self) -> u8 { self.msb() }
 
     #[inline]
-    pub fn low_bit(&self) -> u8 {
-        self.and7()
-    }
+    pub fn low_bit(&self) -> u8 { self.and7() }
 }
 
 pub use self::Register::*;
@@ -92,18 +86,12 @@ impl XMMRegister {
     }
 
     #[inline]
-    pub fn high_bit(&self) -> u8 {
-        self.msb()
-    }
+    pub fn high_bit(&self) -> u8 { self.msb() }
 
     #[inline]
-    pub fn low_bit(&self) -> u8 {
-        self.and7()
-    }
+    pub fn low_bit(&self) -> u8 { self.and7() }
     #[inline]
-    pub fn from_gp(reg: Register) -> XMMRegister {
-        unsafe { std::mem::transmute(reg) }
-    }
+    pub fn from_gp(reg: Register) -> XMMRegister { unsafe { std::mem::transmute(reg) } }
 }
 
 pub use self::XMMRegister::*;

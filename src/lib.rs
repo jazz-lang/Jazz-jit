@@ -1,3 +1,4 @@
+#![feature(repr_simd)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
@@ -59,14 +60,12 @@ fn setup(size: usize) -> *mut u8 {
         let size = size * PAGE_SIZE;
         let mut content: *mut libc::c_void = mem::uninitialized();
         libc::posix_memalign(&mut content, 4096, size);
-        let result = libc::mmap(
-            content,
-            size,
-            libc::PROT_EXEC | libc::PROT_READ | libc::PROT_WRITE,
-            libc::MAP_PRIVATE | libc::MAP_ANONYMOUS,
-            -1,
-            0,
-        );
+        let result = libc::mmap(content,
+                                size,
+                                libc::PROT_EXEC | libc::PROT_READ | libc::PROT_WRITE,
+                                libc::MAP_PRIVATE | libc::MAP_ANONYMOUS,
+                                -1,
+                                0);
         mem::transmute(result)
     }
 }
@@ -97,28 +96,18 @@ pub struct Memory {
 
 impl Memory {
     pub fn new(ptr: *const u8) -> Memory {
-        Memory {
-            start: unsafe { ptr.offset(0) },
-            end: ptr,
-            pointer: ptr,
-            size: 0xdead,
-        }
+        Memory { start: unsafe { ptr.offset(0) },
+                 end: ptr,
+                 pointer: ptr,
+                 size: 0xdead }
     }
-    pub fn start(&self) -> *const u8 {
-        self.start
-    }
+    pub fn start(&self) -> *const u8 { self.start }
 
-    pub fn end(&self) -> *const u8 {
-        self.end
-    }
+    pub fn end(&self) -> *const u8 { self.end }
 
-    pub fn ptr(&self) -> *const u8 {
-        self.pointer
-    }
+    pub fn ptr(&self) -> *const u8 { self.pointer }
 
-    pub fn size(&self) -> usize {
-        self.size
-    }
+    pub fn size(&self) -> usize { self.size }
 }
 
 use self::assembler::Assembler;
@@ -130,19 +119,31 @@ pub fn get_executable_memory(asm: &Assembler) -> Memory {
     let ptr = setup(total_size);
 
     dseg.finish(ptr);
-
+    println!("DSeg block");
+    for i in 0..dseg.size() {
+        unsafe {
+            print!("{} ", *ptr.offset(i as isize));
+        }
+    }
+    println!("");
     let start;
     unsafe {
         start = ptr.offset(dseg.size() as isize);
         ::core::ptr::copy_nonoverlapping(data.as_ptr(), start as *mut u8, data.len());
     };
 
-    let memory = Memory {
-        start,
-        end: unsafe { ptr.offset(total_size as isize) },
-        pointer: ptr,
-        size: total_size,
-    };
+    println!("Code block");
+    for i in 0..total_size {
+        unsafe {
+            print!("{} ", *ptr.offset(i as isize));
+        }
+    }
+    println!("");
+
+    let memory = Memory { start,
+                          end: unsafe { ptr.offset(total_size as isize) },
+                          pointer: ptr,
+                          size: total_size };
 
     memory
 }
