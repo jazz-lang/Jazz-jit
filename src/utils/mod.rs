@@ -1,4 +1,4 @@
-pub fn copy_vec<T: Copy>(v: &Vec<T>) -> Vec<T> {
+pub extern "C" fn copy_vec<T: Copy>(v: &Vec<T>) -> Vec<T> {
     let mut new = Vec::new();
 
     for value in v {
@@ -7,7 +7,7 @@ pub fn copy_vec<T: Copy>(v: &Vec<T>) -> Vec<T> {
     new
 }
 
-pub fn align(value: i32, align: i32) -> i32 {
+pub extern "C" fn align(value: i32, align: i32) -> i32 {
     if align == 0 {
         return value;
     }

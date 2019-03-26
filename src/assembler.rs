@@ -1,4 +1,5 @@
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub struct ForwardJump {
     pub at: usize,
     pub to: usize,
@@ -17,6 +18,7 @@ impl Idx for usize {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
+#[repr(C)]
 pub enum Mem {
     // rbp + val1
     Local(i32),
@@ -41,35 +43,36 @@ pub struct Assembler {
 }
 
 impl Assembler {
-    pub fn emit_u32_at(&mut self, pos: i32, value: u32) {
+    #[no_mangle]
+    pub extern "C" fn emit_u32_at(&mut self, pos: i32, value: u32) {
         let buf = &mut self.data[pos as usize..];
         LittleEndian::write_u32(buf, value);
     }
-
-    pub fn new() -> Assembler {
+    #[no_mangle]
+    pub extern "C" fn new() -> Assembler {
         Assembler { data: Vec::new(),
                     dseg: DSeg::new(),
                     jumps: Vec::new(),
                     labels: Vec::new() }
     }
-
-    pub fn create_label(&mut self) -> usize {
+    #[no_mangle]
+    pub extern "C" fn create_label(&mut self) -> usize {
         let idx = self.labels.len();
 
         self.labels.push(None);
         idx
     }
-
-    pub fn data<'r>(&'r self) -> &'r Vec<u8> { &self.data }
-
-    pub fn bind_label(&mut self, lbl: usize) {
+    #[no_mangle]
+    pub extern "C" fn data<'r>(&'r self) -> &'r Vec<u8> { &self.data }
+    #[no_mangle]
+    pub extern "C" fn bind_label(&mut self, lbl: usize) {
         let lbl_idx = lbl;
 
         assert!(self.labels[lbl_idx].is_none());
         self.labels[lbl_idx] = Some(self.data.len());
     }
-
-    pub fn emit_label(&mut self, lbl: Label) {
+    #[no_mangle]
+    pub extern "C" fn emit_label(&mut self, lbl: Label) {
         let value = self.labels[lbl.index()];
 
         match value {
@@ -91,8 +94,8 @@ impl Assembler {
             }
         }
     }
-
-    pub fn fix_forward_jumps(&mut self) {
+    #[no_mangle]
+    pub extern "C" fn fix_forward_jumps(&mut self) {
         for jmp in &self.jumps {
             let target = self.labels[jmp.to].expect("Label not defined");
             let diff = (target - jmp.at - 4) as i32;
@@ -101,12 +104,13 @@ impl Assembler {
             slice.write_u32::<LittleEndian>(diff as u32).unwrap();
         }
     }
-
-    pub fn pos(&self) -> usize { self.data.len() }
-
-    pub fn emit(&mut self, byte: u8) { self.data.write_u8(byte).unwrap(); }
-
-    pub fn emit32(&mut self, uint: u32) { self.data.write_u32::<LittleEndian>(uint).unwrap(); }
-
-    pub fn emit64(&mut self, ulong: u64) { self.data.write_u64::<LittleEndian>(ulong).unwrap(); }
+    #[no_mangle]
+    pub extern "C" fn pos(&self) -> usize { self.data.len() }
+    pub extern "C" fn emit(&mut self, byte: u8) { self.data.write_u8(byte).unwrap(); }
+    pub extern "C" fn emit32(&mut self, uint: u32) {
+        self.data.write_u32::<LittleEndian>(uint).unwrap();
+    }
+    pub extern "C" fn emit64(&mut self, ulong: u64) {
+        self.data.write_u64::<LittleEndian>(ulong).unwrap();
+    }
 }

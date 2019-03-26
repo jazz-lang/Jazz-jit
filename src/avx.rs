@@ -93,7 +93,7 @@ use VexPrefix::*;
 pub const VEX_W: VexPrefix = VEX_R;
 
 impl LeadingOpcode {
-    pub fn from_v(x: u8) -> LeadingOpcode {
+    pub extern "C" fn from_v(x: u8) -> LeadingOpcode {
         match x {
             102 => LeadingOpcode::k0F,
             _ => unimplemented!(),
@@ -208,24 +208,6 @@ fn emit_vex_prefixfm(asm: &mut Assembler,
     }
 }
 
-fn emit_vex_prefixrm(asm: &mut Assembler,
-                     reg: Register,
-                     vreg: Register,
-                     rm: Mem,
-                     l: VectorLength,
-                     pp: SIMDPrefix,
-                     mm: LeadingOpcode,
-                     w: VexW) {
-    emit_vex_prefixfm(asm,
-                      unsafe { mem::transmute(reg) },
-                      unsafe { mem::transmute(vreg) },
-                      rm,
-                      l,
-                      pp,
-                      mm,
-                      w);
-}
-
 fn emit_vex2_byte0(asm: &mut Assembler) { asm.emit(0xc5); }
 
 fn emit_vex3_byte0(asm: &mut Assembler) { asm.emit(0xc4); }
@@ -274,33 +256,37 @@ pub(crate) fn emit_sse_mem_f(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
     emit_mem(asm, unsafe { mem::transmute(dst) }, &src);
 }
 
-pub fn vinstr(asm: &mut Assembler,
-              op: u8,
-              dst: XMMRegister,
-              src1: XMMRegister,
-              src2: XMMRegister,
-              pp: SIMDPrefix,
-              m: LeadingOpcode,
-              w: VexW) {
+pub extern "C" fn vinstr(asm: &mut Assembler,
+                         op: u8,
+                         dst: XMMRegister,
+                         src1: XMMRegister,
+                         src2: XMMRegister,
+                         pp: SIMDPrefix,
+                         m: LeadingOpcode,
+                         w: VexW) {
     emit_vex_prefixf(asm, dst, src1, src2, VectorLength::kL128, pp, m, w);
     asm.emit(op);
     emit_sse_ff(asm, dst, src2);
 }
 
-pub fn vinstrm(asm: &mut Assembler,
-               op: u8,
-               dst: XMMRegister,
-               src1: XMMRegister,
-               src2: Mem,
-               pp: SIMDPrefix,
-               m: LeadingOpcode,
-               w: VexW) {
+pub extern "C" fn vinstrm(asm: &mut Assembler,
+                          op: u8,
+                          dst: XMMRegister,
+                          src1: XMMRegister,
+                          src2: Mem,
+                          pp: SIMDPrefix,
+                          m: LeadingOpcode,
+                          w: VexW) {
     emit_vex_prefixfm(asm, dst, src1, src2, VectorLength::kL128, pp, m, w);
     asm.emit(op);
     emit_sse_mem_f(asm, dst, src2);
 }
 
-pub fn vps(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
+pub extern "C" fn vps(asm: &mut Assembler,
+                      op: u8,
+                      dst: XMMRegister,
+                      src1: XMMRegister,
+                      src2: XMMRegister) {
     emit_vex_prefixf(asm,
                      dst,
                      src1,
@@ -313,7 +299,11 @@ pub fn vps(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src
     emit_sse_ff(asm, dst, src2);
 }
 
-pub fn vpsm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
+pub extern "C" fn vpsm(asm: &mut Assembler,
+                       op: u8,
+                       dst: XMMRegister,
+                       src1: XMMRegister,
+                       src2: Mem) {
     emit_vex_prefixfm(asm,
                       dst,
                       src1,
@@ -326,7 +316,11 @@ pub fn vpsm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, sr
     emit_sse_mem_f(asm, dst, src2);
 }
 
-pub fn vpd(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
+pub extern "C" fn vpd(asm: &mut Assembler,
+                      op: u8,
+                      dst: XMMRegister,
+                      src1: XMMRegister,
+                      src2: XMMRegister) {
     emit_vex_prefixf(asm,
                      dst,
                      src1,
@@ -339,7 +333,11 @@ pub fn vpd(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src
     emit_sse_ff(asm, dst, src2);
 }
 
-pub fn vpdm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
+pub extern "C" fn vpdm(asm: &mut Assembler,
+                       op: u8,
+                       dst: XMMRegister,
+                       src1: XMMRegister,
+                       src2: Mem) {
     emit_vex_prefixfm(asm,
                       dst,
                       src1,
@@ -352,7 +350,11 @@ pub fn vpdm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, sr
     emit_sse_mem_f(asm, dst, src2);
 }
 
-pub fn vfmasd(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
+pub extern "C" fn vfmasd(asm: &mut Assembler,
+                         op: u8,
+                         dst: XMMRegister,
+                         src1: XMMRegister,
+                         src2: XMMRegister) {
     emit_vex_prefixf(asm,
                      dst,
                      src1,
@@ -365,7 +367,11 @@ pub fn vfmasd(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, 
     emit_sse_ff(asm, dst, src2);
 }
 
-pub fn vfmasdm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
+pub extern "C" fn vfmasdm(asm: &mut Assembler,
+                          op: u8,
+                          dst: XMMRegister,
+                          src1: XMMRegister,
+                          src2: Mem) {
     emit_vex_prefixfm(asm,
                       dst,
                       src1,
@@ -378,7 +384,11 @@ pub fn vfmasdm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister,
     emit_sse_mem_f(asm, dst, src2);
 }
 
-pub fn vfmass(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
+pub extern "C" fn vfmass(asm: &mut Assembler,
+                         op: u8,
+                         dst: XMMRegister,
+                         src1: XMMRegister,
+                         src2: XMMRegister) {
     emit_vex_prefixf(asm,
                      dst,
                      src1,
@@ -391,7 +401,11 @@ pub fn vfmass(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, 
     emit_sse_ff(asm, dst, src2);
 }
 
-pub fn vfmassm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
+pub extern "C" fn vfmassm(asm: &mut Assembler,
+                          op: u8,
+                          dst: XMMRegister,
+                          src1: XMMRegister,
+                          src2: Mem) {
     emit_vex_prefixfm(asm,
                       dst,
                       src1,
@@ -404,8 +418,8 @@ pub fn vfmassm(asm: &mut Assembler, op: u8, dst: XMMRegister, src1: XMMRegister,
     emit_sse_mem_f(asm, dst, src2);
 }
 
-pub fn vmovd_freg_reg(asm: &mut Assembler, dst: XMMRegister, src: Register) {
-    emit_vex_prefixf(asm,
+pub extern "C" fn vmovd_freg_reg(buf: &mut Assembler, dst: XMMRegister, src: Register) {
+    emit_vex_prefixf(buf,
                      dst,
                      XMM0,
                      unsafe { mem::transmute(src) },
@@ -413,11 +427,12 @@ pub fn vmovd_freg_reg(asm: &mut Assembler, dst: XMMRegister, src: Register) {
                      SIMDPrefix::k0x66,
                      LeadingOpcode::k0F,
                      VexW::W0);
-    asm.emit(0x6e);
-    emit_sse_fr(asm, dst, src);
+    buf.emit(0x6e);
+    emit_sse_fr(buf, dst, src);
 }
-pub fn vmovd_freg_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
-    emit_vex_prefixfm(asm,
+#[no_mangle]
+pub extern "C" fn vmovd_freg_mem(buf: &mut Assembler, dst: XMMRegister, src: Mem) {
+    emit_vex_prefixfm(buf,
                       dst,
                       XMM0,
                       unsafe { mem::transmute(src) },
@@ -425,12 +440,13 @@ pub fn vmovd_freg_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
                       SIMDPrefix::k0x66,
                       LeadingOpcode::k0F,
                       VexW::W0);
-    asm.emit(0x6e);
-    emit_sse_mem_f(asm, dst, src);
+    buf.emit(0x6e);
+    emit_sse_mem_f(buf, dst, src);
 }
-pub fn vmovd_reg_freg(asm: &mut Assembler, dst: Register, src: XMMRegister) {
+#[no_mangle]
+pub extern "C" fn vmovd_reg_freg(buf: &mut Assembler, dst: Register, src: XMMRegister) {
     let idst: XMMRegister = unsafe { mem::transmute(dst) };
-    emit_vex_prefixf(asm,
+    emit_vex_prefixf(buf,
                      src,
                      XMM0,
                      idst,
@@ -438,12 +454,12 @@ pub fn vmovd_reg_freg(asm: &mut Assembler, dst: Register, src: XMMRegister) {
                      SIMDPrefix::k0x66,
                      LeadingOpcode::k0F,
                      VexW::W0);
-    asm.emit(0x7e);
-    emit_sse_rf(asm, dst, src);
+    buf.emit(0x7e);
+    emit_sse_rf(buf, dst, src);
 }
 
-pub fn vmovq_freg_reg(asm: &mut Assembler, dst: XMMRegister, src: Register) {
-    emit_vex_prefixf(asm,
+pub extern "C" fn vmovq_freg_reg(buf: &mut Assembler, dst: XMMRegister, src: Register) {
+    emit_vex_prefixf(buf,
                      dst,
                      XMM0,
                      unsafe { mem::transmute(src) },
@@ -451,11 +467,12 @@ pub fn vmovq_freg_reg(asm: &mut Assembler, dst: XMMRegister, src: Register) {
                      SIMDPrefix::k0x66,
                      LeadingOpcode::k0F,
                      VexW::W1);
-    asm.emit(0x6e);
-    emit_sse_fr(asm, dst, src);
+    buf.emit(0x6e);
+    emit_sse_fr(buf, dst, src);
 }
-pub fn vmovq_freg_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
-    emit_vex_prefixfm(asm,
+#[no_mangle]
+pub extern "C" fn vmovq_freg_mem(buf: &mut Assembler, dst: XMMRegister, src: Mem) {
+    emit_vex_prefixfm(buf,
                       dst,
                       XMM0,
                       unsafe { mem::transmute(src) },
@@ -463,12 +480,13 @@ pub fn vmovq_freg_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
                       SIMDPrefix::k0x66,
                       LeadingOpcode::k0F,
                       VexW::W1);
-    asm.emit(0x6e);
-    emit_sse_mem_f(asm, dst, src);
+    buf.emit(0x6e);
+    emit_sse_mem_f(buf, dst, src);
 }
-pub fn vmovq_reg_freg(asm: &mut Assembler, dst: Register, src: XMMRegister) {
+#[no_mangle]
+pub extern "C" fn vmovq_reg_freg(buf: &mut Assembler, dst: Register, src: XMMRegister) {
     let idst: XMMRegister = unsafe { mem::transmute(dst) };
-    emit_vex_prefixf(asm,
+    emit_vex_prefixf(buf,
                      src,
                      XMM0,
                      idst,
@@ -476,12 +494,15 @@ pub fn vmovq_reg_freg(asm: &mut Assembler, dst: Register, src: XMMRegister) {
                      SIMDPrefix::k0x66,
                      LeadingOpcode::k0F,
                      VexW::W1);
-    asm.emit(0x7e);
-    emit_sse_rf(asm, dst, src);
+    buf.emit(0x7e);
+    emit_sse_rf(buf, dst, src);
 }
 
-pub fn vaddpd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-    vinstr(asm,
+pub extern "C" fn vaddpd(buf: &mut Assembler,
+                         dst: XMMRegister,
+                         src1: XMMRegister,
+                         src2: XMMRegister) {
+    vinstr(buf,
            0x58,
            dst,
            src1,
@@ -493,13 +514,15 @@ pub fn vaddpd(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XM
 
 macro_rules! avx_instr {
     ($name: ident, $op: expr, $prefix: expr,$escape: expr,$vex: expr) => {
-        pub fn $name(asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
-            vinstr(asm, $op, dst, src1, src2, $prefix, $escape, $vex);
+        #[no_mangle]
+        pub extern "C" fn $name(buf: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: XMMRegister) {
+            vinstr(buf, $op, dst, src1, src2, $prefix, $escape, $vex);
         }
 
         paste::item! {
-            pub fn [<$name _mem>] (asm: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
-                vinstrm(asm,$op,dst,src1,src2,$prefix,$escape,$vex);
+            #[no_mangle]
+            pub extern "C" fn [<$name _mem>] (buf: &mut Assembler, dst: XMMRegister, src1: XMMRegister, src2: Mem) {
+                vinstrm(buf,$op,dst,src1,src2,$prefix,$escape,$vex);
             }
         }
     };
@@ -507,7 +530,7 @@ macro_rules! avx_instr {
 
 macro_rules! avx_mem_instr {
     ($name: ident, $op: expr, $prefix: expr,$escape: expr,$vex: expr) => {
-        pub fn $name(asm: &mut Assembler, dst: XMMRegister, src2: Mem) {
+        pub extern "C" fn $name(asm: &mut Assembler, dst: XMMRegister, src2: Mem) {
             vinstrm(asm, $op, dst, XMM0, src2, $prefix, $escape, $vex);
         }
     };
@@ -515,20 +538,29 @@ macro_rules! avx_mem_instr {
 
 macro_rules! avx_instr_2op {
     ($name: ident,$op: expr,$prefix: expr,$escape: expr,$vex: expr,$vlen: expr) => {
-        pub fn $name(asm: &mut Assembler, dst: XMMRegister, src: XMMRegister) {
+        pub extern "C" fn $name(asm: &mut Assembler, dst: XMMRegister, src: XMMRegister) {
             emit_vex_prefixf(asm, dst, XMM0, src, $vlen, $prefix, $escape, $vex);
             asm.emit($op);
             emit_sse_ff(asm, dst, src);
             asm.data.pop();
         }
+        paste::item!(
+        pub extern "C" fn [<$name _mem>](asm: &mut Assembler, dst: XMMRegister, src: Mem) {
+            emit_vex_prefixfm(asm, dst, XMM0, src, $vlen, $prefix, $escape, $vex);
+            asm.emit($op);
+            emit_sse_mem_f(asm, dst, src);
+            asm.data.pop();
+        }
+        );
     };
 }
-
-pub fn vmovaps(asm: &mut Assembler, dst: XMMRegister, src: XMMRegister) {
-    vps(asm, 0x28, dst, XMM0, src);
+#[no_mangle]
+pub extern "C" fn vmovaps(buf: &mut Assembler, dst: XMMRegister, src: XMMRegister) {
+    vps(buf, 0x28, dst, XMM0, src);
 }
-pub fn vmovaps_mem(asm: &mut Assembler, dst: XMMRegister, src: Mem) {
-    vpsm(asm, 0x28, dst, XMM0, src);
+#[no_mangle]
+pub extern "C" fn vmovaps_mem(buf: &mut Assembler, dst: XMMRegister, src: Mem) {
+    vpsm(buf, 0x28, dst, XMM0, src);
 }
 
 avx_instr!(vaddps, 0x58, SIMDPrefix::None, LeadingOpcode::k0F, VexW::W0);
@@ -621,28 +653,21 @@ avx_instr!(vsqrtsd,
            LeadingOpcode::k0F,
            VexW::W0);
 
-/*avx_instr_2op!(
-    vbroadcastf128,
-    0x1a,
-    SIMDPrefix::k0x66,
-    LeadingOpcode::k0F38,
-    VexW::W0,
-    VectorLength::kL128
-);
-avx_instr_2op!(
-    vbroadcasti128,
-    0x5a,
-    SIMDPrefix::k0x66,
-    LeadingOpcode::k0F38,
-    VexW::W0,
-    VectorLength::kL128
-);
-avx_instr_2op!(
-    vbroadcastsd,
-    0x19,
-    SIMDPrefix::k0x66,
-    LeadingOpcode::k0F38,
-    VexW::Evex,
-    VectorLength::kL128
-);
-*/
+avx_instr_2op!(vbroadcastf128,
+               0x1a,
+               SIMDPrefix::k0x66,
+               LeadingOpcode::k0F3A,
+               VexW::W1,
+               VectorLength::kL256);
+avx_instr_2op!(vbroadcasti128,
+               0x5a,
+               SIMDPrefix::k0x66,
+               LeadingOpcode::k0F38,
+               VexW::W0,
+               VectorLength::kL128);
+avx_instr_2op!(vbroadcastsd,
+               0x19,
+               SIMDPrefix::k0x66,
+               LeadingOpcode::k0F38,
+               VexW::W1,
+               VectorLength::kL128);

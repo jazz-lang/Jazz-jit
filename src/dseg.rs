@@ -3,23 +3,26 @@ use crate::align;
 use core::mem::size_of;
 
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub struct DSeg {
     entries: Vec<Entry>,
     size: i32,
 }
 
 #[derive(Debug, Clone)]
-struct Entry {
+#[repr(C)]
+pub struct Entry {
     disp: i32,
     value: Value,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[repr(simd)]
+#[repr(C, simd)]
 pub struct f32x4(pub f32, pub f32, pub f32, pub f32);
 
 #[derive(Debug, PartialEq, Clone)]
-enum Value {
+#[repr(C)]
+pub enum Value {
     Ptr(*const u8),
     Float(f32),
     Double(f64),
@@ -28,7 +31,7 @@ enum Value {
 }
 
 impl Value {
-    pub fn size(&self) -> i32 {
+    pub extern "C" fn size(&self) -> i32 {
         match self {
             &Value::Ptr(_) => size_of::<*const u8>() as i32,
             &Value::Int(_) => size_of::<i32>() as i32,
@@ -40,12 +43,12 @@ impl Value {
 }
 
 impl DSeg {
-    pub fn new() -> DSeg {
+    pub extern "C" fn new() -> DSeg {
         DSeg { entries: Vec::new(),
                size: 0 }
     }
 
-    pub fn size(&self) -> i32 { self.size }
+    pub extern "C" fn size(&self) -> i32 { self.size }
 
     fn add_value(&mut self, v: Value) -> i32 {
         let size = v.size();
@@ -57,7 +60,7 @@ impl DSeg {
         self.size
     }
 
-    pub fn finish(&self, ptr: *const u8) {
+    pub extern "C" fn finish(&self, ptr: *const u8) {
         for entry in &self.entries {
             let offset = self.size - entry.disp;
 
@@ -85,7 +88,7 @@ impl DSeg {
         }
     }
 
-    pub fn add_addr_reuse(&mut self, ptr: *const u8) -> i32 {
+    pub extern "C" fn add_addr_reuse(&mut self, ptr: *const u8) -> i32 {
         for entry in &self.entries {
             if entry.value == Value::Ptr(ptr) {
                 return entry.disp;
@@ -94,16 +97,22 @@ impl DSeg {
 
         self.add_addr(ptr)
     }
-    pub fn add_f32x4(&mut self, value: f32x4) -> i32 { self.add_value(Value::F4(value)) }
-    pub fn add_int(&mut self, value: i32) -> i32 { self.add_value(Value::Int(value)) }
+    pub extern "C" fn add_f32x4(&mut self, value: f32x4) -> i32 { self.add_value(Value::F4(value)) }
+    pub extern "C" fn add_int(&mut self, value: i32) -> i32 { self.add_value(Value::Int(value)) }
 
-    pub fn add_addr(&mut self, value: *const u8) -> i32 { self.add_value(Value::Ptr(value)) }
+    pub extern "C" fn add_addr(&mut self, value: *const u8) -> i32 {
+        self.add_value(Value::Ptr(value))
+    }
 
-    pub fn add_double(&mut self, value: f64) -> i32 { self.add_value(Value::Double(value)) }
+    pub extern "C" fn add_double(&mut self, value: f64) -> i32 {
+        self.add_value(Value::Double(value))
+    }
 
-    pub fn add_float(&mut self, value: f32) -> i32 { self.add_value(Value::Float(value)) }
+    pub extern "C" fn add_float(&mut self, value: f32) -> i32 {
+        self.add_value(Value::Float(value))
+    }
 
-    pub fn align(&mut self, size: i32) -> i32 {
+    pub extern "C" fn align(&mut self, size: i32) -> i32 {
         assert!(size > 0);
         self.size = align(self.size, size);
 

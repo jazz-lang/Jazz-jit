@@ -24,26 +24,28 @@ pub enum Register {
 
 impl Register {
     #[inline]
-    pub fn is_basic_reg(self) -> bool { self == RAX || self == RBX || self == RCX || self == RDX }
+    pub extern "C" fn is_basic_reg(self) -> bool {
+        self == RAX || self == RBX || self == RCX || self == RDX
+    }
     #[inline]
-    pub fn msb(self) -> u8 {
+    pub extern "C" fn msb(self) -> u8 {
         assert!(self != RIP);
 
         (self as u8 >> 3) & 0x01
     }
 
     #[inline]
-    pub fn and7(self) -> u8 {
+    pub extern "C" fn and7(self) -> u8 {
         assert!(self != RIP);
 
         self as u8 & 0x07
     }
 
     #[inline]
-    pub fn high_bit(&self) -> u8 { self.msb() }
+    pub extern "C" fn high_bit(&self) -> u8 { self.msb() }
 
     #[inline]
-    pub fn low_bit(&self) -> u8 { self.and7() }
+    pub extern "C" fn low_bit(&self) -> u8 { self.and7() }
 }
 
 pub use self::Register::*;
@@ -73,25 +75,25 @@ pub enum XMMRegister {
 
 impl XMMRegister {
     #[inline]
-    pub fn msb(self) -> u8 {
+    pub extern "C" fn msb(self) -> u8 {
         //assert!(self != RIP);
 
         (self as u8 >> 3) & 0x01
     }
     #[inline]
-    pub fn and7(self) -> u8 {
+    pub extern "C" fn and7(self) -> u8 {
         //assert!(self != RIP);
 
         self as u8 & 0x07
     }
 
     #[inline]
-    pub fn high_bit(&self) -> u8 { self.msb() }
+    pub extern "C" fn high_bit(&self) -> u8 { self.msb() }
 
     #[inline]
-    pub fn low_bit(&self) -> u8 { self.and7() }
+    pub extern "C" fn low_bit(&self) -> u8 { self.and7() }
     #[inline]
-    pub fn from_gp(reg: Register) -> XMMRegister { unsafe { std::mem::transmute(reg) } }
+    pub extern "C" fn from_gp(reg: Register) -> XMMRegister { unsafe { std::mem::transmute(reg) } }
 }
 
 pub use self::XMMRegister::*;
@@ -127,14 +129,14 @@ pub enum Reg {
 }
 
 impl Reg {
-    pub fn reg(&self) -> Register {
+    pub extern "C" fn reg(&self) -> Register {
         match self {
             Reg::Gpr(reg) => *reg,
             _ => panic!(""),
         }
     }
 
-    pub fn freg(&self) -> XMMRegister {
+    pub extern "C" fn freg(&self) -> XMMRegister {
         match self {
             Reg::Float(float) => *float,
             _ => panic!(""),
