@@ -165,6 +165,29 @@ struct Assembler
   Vec<Option<uintptr_t>> labels;
 };
 
+struct Reg
+{
+  enum class Tag
+  {
+    Gpr,
+    Float
+  };
+
+  struct Gpr_Body
+  {
+    Register _0;
+  };
+  struct Float_Body
+  {
+    XMMRegister _0;
+  };
+  Tag tag;
+  union {
+    Gpr_Body gpr;
+    Float_Body fpr;
+  };
+}
+
 struct Mem
 {
   enum class Tag
@@ -229,7 +252,11 @@ extern "C"
 
   void addss(Assembler *buf, XMMRegister dest, XMMRegister src);
 
-  void cmov(Assembler *buf, uint8_t x64, Register dest, Register src, CondCode cond);
+  void cmov(Assembler *buf,
+            uint8_t x64,
+            Register dest,
+            Register src,
+            CondCode cond);
 
   void cvtps2dq(Assembler *buf, XMMRegister dst, XMMRegister src);
 
@@ -259,11 +286,17 @@ extern "C"
 
   void emit64(Assembler *buf, uint64_t val);
 
-  void emit_add_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_add_reg_reg(Assembler *buf,
+                        uint8_t x64,
+                        Register src,
+                        Register dest);
 
   void emit_addq_imm_reg(Assembler *buf, int32_t imm, Register reg);
 
-  void emit_and_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_and_reg_reg(Assembler *buf,
+                        uint8_t x64,
+                        Register src,
+                        Register dest);
 
   void emit_andb_imm_reg(Assembler *buf, uint8_t imm, Register dest);
 
@@ -273,11 +306,22 @@ extern "C"
 
   void emit_cdq(Assembler *buf);
 
-  void emit_cmp_imm_reg(Assembler *buf, MachineMode mode, int32_t imm, Register reg);
+  void emit_cmp_imm_reg(Assembler *buf,
+                        MachineMode mode,
+                        int32_t imm,
+                        Register reg);
 
-  void emit_cmp_mem_imm(Assembler *buf, MachineMode mode, Register base, int32_t disp, int32_t imm);
+  void emit_cmp_mem_imm(Assembler *buf,
+                        MachineMode mode,
+                        Register base,
+                        int32_t disp,
+                        int32_t imm);
 
-  void emit_cmp_mem_reg(Assembler *buf, MachineMode mode, Register base, int32_t disp, Register dest);
+  void emit_cmp_mem_reg(Assembler *buf,
+                        MachineMode mode,
+                        Register base,
+                        int32_t disp,
+                        Register dest);
 
   void emit_cmp_memindex_reg(Assembler *buf,
                              MachineMode mode,
@@ -287,7 +331,10 @@ extern "C"
                              int32_t disp,
                              Register dest);
 
-  void emit_cmp_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_cmp_reg_reg(Assembler *buf,
+                        uint8_t x64,
+                        Register src,
+                        Register dest);
 
   void emit_cmpb_imm_reg(Assembler *buf, uint8_t imm, Register dest);
 
@@ -295,7 +342,10 @@ extern "C"
 
   void emit_idiv_reg_reg(Assembler *buf, uint8_t x64, Register reg);
 
-  void emit_imul_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_imul_reg_reg(Assembler *buf,
+                         uint8_t x64,
+                         Register src,
+                         Register dest);
 
   void emit_jcc(Assembler *buf, CondCode cond, Label lbl);
 
@@ -323,9 +373,15 @@ extern "C"
                              int32_t scale,
                              int32_t disp);
 
-  void emit_mov_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_mov_reg_reg(Assembler *buf,
+                        uint8_t x64,
+                        Register src,
+                        Register dest);
 
-  void emit_movb_imm_memq(Assembler *buf, uint8_t imm, Register dest, int32_t disp);
+  void emit_movb_imm_memq(Assembler *buf,
+                          uint8_t imm,
+                          Register dest,
+                          int32_t disp);
 
   void emit_movb_imm_memscaleq(Assembler *buf,
                                uint8_t imm,
@@ -333,37 +389,74 @@ extern "C"
                                Register index,
                                uint8_t scale);
 
-  void emit_movb_memq_reg(Assembler *buf, Register src, int32_t disp, Register dest);
+  void emit_movb_memq_reg(Assembler *buf,
+                          Register src,
+                          int32_t disp,
+                          Register dest);
 
-  void emit_movb_reg_memq(Assembler *buf, Register src, Register dest, int32_t disp);
+  void emit_movb_reg_memq(Assembler *buf,
+                          Register src,
+                          Register dest,
+                          int32_t disp);
 
   void emit_movb_reg_reg(Assembler *buf, Register src, Register dest);
 
-  void emit_movl_ar(Assembler *buf, Register base, Register index, uint8_t scale, Register dest);
+  void emit_movl_ar(Assembler *buf,
+                    Register base,
+                    Register index,
+                    uint8_t scale,
+                    Register dest);
 
   void emit_movl_imm_reg(Assembler *buf, int32_t imm, Register reg);
 
-  void emit_movl_memq_reg(Assembler *buf, Register src, int32_t disp, Register dest);
+  void emit_movl_memq_reg(Assembler *buf,
+                          Register src,
+                          int32_t disp,
+                          Register dest);
 
-  void emit_movl_ra(Assembler *buf, Register src, Register base, Register index, uint8_t scale);
+  void emit_movl_ra(Assembler *buf,
+                    Register src,
+                    Register base,
+                    Register index,
+                    uint8_t scale);
 
-  void emit_movl_reg_memq(Assembler *buf, Register src, Register dest, int32_t disp);
+  void emit_movl_reg_memq(Assembler *buf,
+                          Register src,
+                          Register dest,
+                          int32_t disp);
 
-  void emit_movq_ar(Assembler *buf, Register base, Register index, uint8_t scale, Register dest);
+  void emit_movq_ar(Assembler *buf,
+                    Register base,
+                    Register index,
+                    uint8_t scale,
+                    Register dest);
 
   void emit_movq_imm64_reg(Assembler *buf, int64_t imm, Register reg);
 
   void emit_movq_imm_reg(Assembler *buf, int32_t imm, Register reg);
 
-  void emit_movq_memq_reg(Assembler *buf, Register src, int32_t disp, Register dest);
+  void emit_movq_memq_reg(Assembler *buf,
+                          Register src,
+                          int32_t disp,
+                          Register dest);
 
-  void emit_movq_ra(Assembler *buf, Register src, Register base, Register index, uint8_t scale);
+  void emit_movq_ra(Assembler *buf,
+                    Register src,
+                    Register base,
+                    Register index,
+                    uint8_t scale);
 
-  void emit_movq_reg_memq(Assembler *buf, Register src, Register dest, int32_t disp);
+  void emit_movq_reg_memq(Assembler *buf,
+                          Register src,
+                          Register dest,
+                          int32_t disp);
 
   void emit_movsx(Assembler *buf, Register src, Register dest);
 
-  void emit_movzbl_memq_reg(Assembler *buf, Register src, int32_t disp, Register dest);
+  void emit_movzbl_memq_reg(Assembler *buf,
+                            Register src,
+                            int32_t disp,
+                            Register dest);
 
   void emit_movzbl_reg_reg(Assembler *buf, Register src, Register dest);
 
@@ -384,7 +477,10 @@ extern "C"
 
   void emit_op(Assembler *buf, uint8_t opcode);
 
-  void emit_or_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_or_reg_reg(Assembler *buf,
+                       uint8_t x64,
+                       Register src,
+                       Register dest);
 
   void emit_popq_reg(Assembler *buf, Register reg);
 
@@ -410,9 +506,15 @@ extern "C"
 
   void emit_sib(Assembler *buf, uint8_t scale, uint8_t index, uint8_t base);
 
-  void emit_sub_imm_mem(Assembler *buf, MachineMode mode, Register base, uint8_t imm);
+  void emit_sub_imm_mem(Assembler *buf,
+                        MachineMode mode,
+                        Register base,
+                        uint8_t imm);
 
-  void emit_sub_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_sub_reg_reg(Assembler *buf,
+                        uint8_t x64,
+                        Register src,
+                        Register dest);
 
   void emit_subq_imm_reg(Assembler *buf, int32_t imm, Register reg);
 
@@ -420,7 +522,10 @@ extern "C"
 
   void emit_testq_reg_reg(Assembler *buf, Register op1, Register op2);
 
-  void emit_xor_reg_reg(Assembler *buf, uint8_t x64, Register src, Register dest);
+  void emit_xor_reg_reg(Assembler *buf,
+                        uint8_t x64,
+                        Register src,
+                        Register dest);
 
   void emit_xorb_imm_reg(Assembler *buf, uint8_t imm, Register dest);
 
@@ -432,6 +537,8 @@ extern "C"
 
   void lea(Assembler *buf, Register dest, Mem src);
 
+  Reg reg_gpr(Register reg);
+  Reg reg_fpr(XMMRegister reg);
   Mem mem_base(Register reg, int32_t off);
 
   Mem mem_index(Register reg, Register reg2, int32_t v1, int32_t v2);
@@ -766,11 +873,23 @@ extern "C"
 
   void sqrtss(Assembler *buf, XMMRegister dest, XMMRegister src);
 
-  void sse_float_freg_freg(Assembler *buf, bool dbl, uint8_t op, XMMRegister dest, XMMRegister src);
+  void sse_float_freg_freg(Assembler *buf,
+                           bool dbl,
+                           uint8_t op,
+                           XMMRegister dest,
+                           XMMRegister src);
 
-  void sse_float_freg_mem(Assembler *buf, bool dbl, uint8_t op, XMMRegister dest, Mem src);
+  void sse_float_freg_mem(Assembler *buf,
+                          bool dbl,
+                          uint8_t op,
+                          XMMRegister dest,
+                          Mem src);
 
-  void sse_float_freg_mem_66(Assembler *buf, bool dbl, uint8_t op, XMMRegister dest, Mem src);
+  void sse_float_freg_mem_66(Assembler *buf,
+                             bool dbl,
+                             uint8_t op,
+                             XMMRegister dest,
+                             Mem src);
 
   void sse_float_freg_reg(Assembler *buf,
                           bool dbl,
@@ -786,9 +905,15 @@ extern "C"
                           Register dest,
                           XMMRegister src);
 
-  void sse_packed_freg_freg(Assembler *buf, uint8_t op, XMMRegister dest, XMMRegister src);
+  void sse_packed_freg_freg(Assembler *buf,
+                            uint8_t op,
+                            XMMRegister dest,
+                            XMMRegister src);
 
-  void sse_packed_freg_mem(Assembler *buf, uint8_t op, XMMRegister dest, Mem src);
+  void sse_packed_freg_mem(Assembler *buf,
+                           uint8_t op,
+                           XMMRegister dest,
+                           Mem src);
 
   void subps(Assembler *buf, XMMRegister dest, XMMRegister src);
 
@@ -802,7 +927,10 @@ extern "C"
 
   void ucomiss(Assembler *buf, XMMRegister dest, XMMRegister src);
 
-  void vcvtps2dq(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vcvtps2dq(Assembler *buf,
+                 XMMRegister dst,
+                 XMMRegister src1,
+                 XMMRegister src2);
 
   void vmovaps(Assembler *buf, XMMRegister dst, XMMRegister src);
 
@@ -816,187 +944,391 @@ extern "C"
 
   void vmovq_reg_freg(Assembler *buf, Register dst, XMMRegister src);
 
-  void vpackssdw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpackssdw(Assembler *buf,
+                 XMMRegister dst,
+                 XMMRegister src1,
+                 XMMRegister src2);
 
-  void vpackssdw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpackssdw_mem(Assembler *buf,
+                     XMMRegister dst,
+                     XMMRegister src1,
+                     Mem src2);
 
-  void vpacksswb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpacksswb(Assembler *buf,
+                 XMMRegister dst,
+                 XMMRegister src1,
+                 XMMRegister src2);
 
-  void vpacksswb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpacksswb_mem(Assembler *buf,
+                     XMMRegister dst,
+                     XMMRegister src1,
+                     Mem src2);
 
-  void vpackuswb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpackuswb(Assembler *buf,
+                 XMMRegister dst,
+                 XMMRegister src1,
+                 XMMRegister src2);
 
-  void vpackuswb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpackuswb_mem(Assembler *buf,
+                     XMMRegister dst,
+                     XMMRegister src1,
+                     Mem src2);
 
-  void vpaddb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddb(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpaddb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpaddd(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddd(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpaddd_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpaddsb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddsb(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpaddsb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpaddsw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddsw(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpaddsw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpaddusb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddusb(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpaddusb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpaddusb_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpaddusw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddusw(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpaddusw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpaddusw_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpaddw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpaddw(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpaddw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpand(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpand(Assembler *buf,
+             XMMRegister dst,
+             XMMRegister src1,
+             XMMRegister src2);
 
   void vpand_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpcmpeqb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpcmpeqb(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpcmpeqb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpcmpeqb_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpcmpeqd(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpcmpeqd(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpcmpeqd_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpcmpeqd_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpcmpeqw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpcmpeqw(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpcmpeqw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpcmpeqw_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpcmpgtb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpcmpgtb(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpcmpgtb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpcmpgtb_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpcmpgtd(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpcmpgtd(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpcmpgtd_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpcmpgtd_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpcmpgtw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpcmpgtw(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpcmpgtw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpcmpgtw_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpmaxsw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpmaxsw(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpmaxsw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpmaxub(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpmaxub(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpmaxub_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpminsw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpminsw(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpminsw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpminub(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpminub(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpminub_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpmullw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpmullw(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpmullw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpmuludq(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpmuludq(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpmuludq_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpmuludq_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpor(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpor(Assembler *buf,
+            XMMRegister dst,
+            XMMRegister src1,
+            XMMRegister src2);
 
   void vpor_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpslld(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpslld(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpslld_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsllw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsllw(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsllw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsrad(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsrad(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsrad_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsraw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsraw(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsraw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsrld(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsrld(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsrld_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsrlw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsrlw(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsrlw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsubb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubb(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsubb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsubd(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubd(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsubd_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsubsb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubsb(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpsubsb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsubsw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubsw(Assembler *buf,
+               XMMRegister dst,
+               XMMRegister src1,
+               XMMRegister src2);
 
   void vpsubsw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpsubusb(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubusb(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpsubusb_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpsubusb_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpsubusw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubusw(Assembler *buf,
+                XMMRegister dst,
+                XMMRegister src1,
+                XMMRegister src2);
 
-  void vpsubusw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpsubusw_mem(Assembler *buf,
+                    XMMRegister dst,
+                    XMMRegister src1,
+                    Mem src2);
 
-  void vpsubw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpsubw(Assembler *buf,
+              XMMRegister dst,
+              XMMRegister src1,
+              XMMRegister src2);
 
   void vpsubw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
-  void vpunpckhbw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpckhbw(Assembler *buf,
+                  XMMRegister dst,
+                  XMMRegister src1,
+                  XMMRegister src2);
 
-  void vpunpckhbw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpckhbw_mem(Assembler *buf,
+                      XMMRegister dst,
+                      XMMRegister src1,
+                      Mem src2);
 
-  void vpunpckhdq(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpckhdq(Assembler *buf,
+                  XMMRegister dst,
+                  XMMRegister src1,
+                  XMMRegister src2);
 
-  void vpunpckhdq_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpckhdq_mem(Assembler *buf,
+                      XMMRegister dst,
+                      XMMRegister src1,
+                      Mem src2);
 
-  void vpunpckhqdq(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpckhqdq(Assembler *buf,
+                   XMMRegister dst,
+                   XMMRegister src1,
+                   XMMRegister src2);
 
-  void vpunpckhqdq_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpckhqdq_mem(Assembler *buf,
+                       XMMRegister dst,
+                       XMMRegister src1,
+                       Mem src2);
 
-  void vpunpckhwd(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpckhwd(Assembler *buf,
+                  XMMRegister dst,
+                  XMMRegister src1,
+                  XMMRegister src2);
 
-  void vpunpckhwd_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpckhwd_mem(Assembler *buf,
+                      XMMRegister dst,
+                      XMMRegister src1,
+                      Mem src2);
 
-  void vpunpcklbw(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpcklbw(Assembler *buf,
+                  XMMRegister dst,
+                  XMMRegister src1,
+                  XMMRegister src2);
 
-  void vpunpcklbw_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpcklbw_mem(Assembler *buf,
+                      XMMRegister dst,
+                      XMMRegister src1,
+                      Mem src2);
 
-  void vpunpckldq(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpckldq(Assembler *buf,
+                  XMMRegister dst,
+                  XMMRegister src1,
+                  XMMRegister src2);
 
-  void vpunpckldq_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpckldq_mem(Assembler *buf,
+                      XMMRegister dst,
+                      XMMRegister src1,
+                      Mem src2);
 
-  void vpunpcklqdq(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpcklqdq(Assembler *buf,
+                   XMMRegister dst,
+                   XMMRegister src1,
+                   XMMRegister src2);
 
-  void vpunpcklqdq_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpcklqdq_mem(Assembler *buf,
+                       XMMRegister dst,
+                       XMMRegister src1,
+                       Mem src2);
 
-  void vpunpcklwd(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpunpcklwd(Assembler *buf,
+                  XMMRegister dst,
+                  XMMRegister src1,
+                  XMMRegister src2);
 
-  void vpunpcklwd_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
+  void vpunpcklwd_mem(Assembler *buf,
+                      XMMRegister dst,
+                      XMMRegister src1,
+                      Mem src2);
 
-  void vpxor(Assembler *buf, XMMRegister dst, XMMRegister src1, XMMRegister src2);
+  void vpxor(Assembler *buf,
+             XMMRegister dst,
+             XMMRegister src1,
+             XMMRegister src2);
 
   void vpxor_mem(Assembler *buf, XMMRegister dst, XMMRegister src1, Mem src2);
 
