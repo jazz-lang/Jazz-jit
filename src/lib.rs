@@ -142,6 +142,8 @@ pub extern "C" fn get_executable_memory(buf: &Assembler) -> Memory {
 pub mod c_api {
     use crate::constants_x64::*;
     use crate::assembler::Mem;
+    use crate::assembler::*;
+    use super::MachineMode;
     #[no_mangle]
     
     pub extern "C" fn mem_base(reg: Register,off: i32) -> Mem {
@@ -158,5 +160,15 @@ pub mod c_api {
     #[no_mangle]
     pub extern "C" fn mem_index(reg: Register,reg2: Register,v1: i32,v2: i32) -> Mem {
         Mem::Index(reg,reg2,v1,v2)
+    }
+
+    #[no_mangle]
+    pub extern "C" fn asm_load_int(buf: &mut Assembler,mode: MachineMode,imm: i64,dst: Register) {
+        buf.load_int_const(mode,dst,imm);
+    }
+
+    #[no_mangle]
+    pub extern "C" fn asm_load_float(buf: &mut Assembler,mode: MachineMode,imm: f64,dst: XMMRegister) {
+        buf.load_float_const(mode,dst,imm);
     }
 }

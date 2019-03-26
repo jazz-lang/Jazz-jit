@@ -123,6 +123,7 @@ pub const SPREG: Register = RSP;
 pub const FPREG: Register = RBP;
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy, PartialOrd, Ord, Hash)]
+#[repr(C)]
 pub enum Reg {
     Gpr(Register),
     Float(XMMRegister),
@@ -142,4 +143,14 @@ impl Reg {
             _ => panic!(""),
         }
     }
+}
+
+
+#[no_mangle]
+pub extern "C" fn reg_gpr(reg: Register) -> Reg {
+    Reg::Gpr(reg)
+}
+
+pub extern "C" fn reg_fpr(reg: XMMRegister) -> Reg {
+    Reg::Float(reg)
 }
