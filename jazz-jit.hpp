@@ -246,8 +246,8 @@ struct Memory
 extern "C"
 {
 
-  void asm_load_int(Assembler *buf, MachineMode mode, Register dest, long imm);
-  void asm_load_float(Assembler *buf, MachineMode mode, XMMRegister dest, double imm);
+  void asm_load_int(Assembler *buf, MachineMode mode, long imm,Register dest);
+  void asm_load_float(Assembler *buf, MachineMode mode, double imm,XMMRegister dest);
 
   void addps(Assembler *buf, XMMRegister dest, XMMRegister src);
 
