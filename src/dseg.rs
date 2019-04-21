@@ -17,7 +17,7 @@ pub struct Entry {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[repr(C, simd)]
+#[repr(C)]
 pub struct f32x4(pub f32, pub f32, pub f32, pub f32);
 
 #[derive(Debug, PartialEq, Clone)]
